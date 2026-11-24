@@ -54,7 +54,7 @@ class MedicationBody(BaseModel):
 
 class TakenBody(BaseModel):
     status: str
-    planned_at: str
+    planned_at: Optional[str] = None
     idempotency_key: Optional[str] = None
 
 

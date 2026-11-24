@@ -453,7 +453,7 @@ document.addEventListener("click", async (e)=>{
       toast("用药计划已添加");
     }
     else if (a === "mark-taken") {
-      await api(`/api/medications/${act.dataset.plan}/taken`, "POST", { status:"taken", planned_at:new Date().toISOString() });
+      await api(`/api/medications/${act.dataset.plan}/taken`, "POST", { status:"taken" });
       toast("已标记服药");
     }
     else if (a === "order-self") {

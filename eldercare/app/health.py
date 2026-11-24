@@ -130,7 +130,7 @@ def list_medications(conn, elder_id: int) -> list[dict]:
 
 
 def mark_medication(conn, plan_id: int, elder_id: int, status: str,
-                    planned_at: str, idempotency_key: str | None = None) -> dict:
+                    planned_at: str | None = None, idempotency_key: str | None = None) -> dict:
     if status not in models.MED_LOG_STATUSES:
         raise errors.ValidationError("服药状态无效")
     plan = conn.execute("SELECT * FROM medication_plans WHERE plan_id=?", (plan_id,)).fetchone()
@@ -138,6 +138,8 @@ def mark_medication(conn, plan_id: int, elder_id: int, status: str,
         raise errors.NotFoundError("用药计划不存在")
 
     now = db.utc_now()
+    # 计划时间缺省时取服务端当前时间；操作时间 recorded_at 恒为服务端系统时间
+    planned_at = planned_at or now
     if idempotency_key:
         dup = conn.execute(
             "SELECT * FROM medication_logs WHERE idempotency_key=?", (idempotency_key,)
