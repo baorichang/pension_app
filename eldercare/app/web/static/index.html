@@ -50,6 +50,9 @@
   .tabbar .tab{flex:1;text-align:center;font-size:11px;color:var(--muted);cursor:pointer;}
   .tabbar .tab .ti{font-size:18px;display:block;margin-bottom:3px;}
   .tabbar .tab.active{color:var(--ink);font-weight:700;}
+  .tabbar .center{flex:1;display:flex;justify-content:center;}
+  .sos-btn{width:58px;height:58px;border:2px solid var(--warn);color:var(--warn);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:-22px;background:#fff;cursor:pointer;}
+  .sos-btn .ti{font-size:16px;}
   .timeline{padding-left:18px;position:relative;}
   .timeline::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:1px;background:var(--line);}
   .tl{position:relative;margin-bottom:16px;}
@@ -89,7 +92,7 @@ const VIT_LABEL = { bp:"血压", glucose:"血糖", heart_rate:"心率", weight:"
 const ORDER_STATUS = { pending_pay:"待付款", in_progress:"进行中", completed:"已完成", after_sale:"售后" };
 const ALERT_LABEL = { SOS:"SOS 求助", vitals_abnormal:"体征异常", missed_med:"漏服药", geofence:"离开围栏", idle:"长时间无活动" };
 
-let state = { end:"elder", uid:null, role:null, tab:"home", detailElder:null, vitalType:null, authed:false, loginEnd:"elder" };
+let state = { end:"elder", uid:null, role:null, tab:"home", detailElder:null, vitalType:null, authed:false, loginEnd:"elder", resCat:"", famBrowse:false };
 let ws = null;
 
 // ---------- 接口封装 ----------
@@ -141,8 +144,9 @@ function connectWS(){
 // ---------- 导航与渲染 ----------
 const ELDER_TABS = [
   { key:"home",    label:"首页", ti:"▦" },
-  { key:"health",  label:"健康", ti:"✚" },
   { key:"service", label:"服务", ti:"🛎" },
+  { key:"sos",     center:true, label:"SOS", ti:"!" },
+  { key:"health",  label:"健康", ti:"✚" },
   { key:"mine",    label:"我的", ti:"◉" },
 ];
 const FAMILY_TABS = [
@@ -154,9 +158,13 @@ const FAMILY_TABS = [
 
 function renderTabbar(){
   const tabs = state.end === "elder" ? ELDER_TABS : FAMILY_TABS;
-  document.getElementById("tabbar").innerHTML = tabs.map(t=>
-    `<div class="tab ${state.tab===t.key?'active':''}" data-tab="${t.key}">
-       <span class="ti">${t.ti}</span>${t.label}</div>`).join("");
+  document.getElementById("tabbar").innerHTML = tabs.map(t=>{
+    if (t.center) {
+      return `<div class="center"><div class="sos-btn" data-tab="sos"><span class="ti">!</span>SOS</div></div>`;
+    }
+    return `<div class="tab ${state.tab===t.key?'active':''}" data-tab="${t.key}">
+       <span class="ti">${t.ti}</span>${t.label}</div>`;
+  }).join("");
   document.getElementById("appTitle").textContent =
     state.end === "elder" ? "老人端" : "子女端";
 }
@@ -208,6 +216,7 @@ function renderLogin(){
 async function renderElder(){
   if (state.tab === "health") return renderElderHealth();
   if (state.tab === "service") return renderElderService();
+  if (state.tab === "sos") return renderElderSos();
   if (state.tab === "mine") return renderElderMine();
   return renderElderHome();
 }
@@ -288,8 +297,13 @@ async function renderElderHealth(){
 }
 
 async function renderElderService(){
-  const resources = await api("/api/resources");
+  const cat = state.resCat || "";
+  const resources = await api("/api/resources" + (cat ? `?category=${cat}` : ""));
+  const cats = [["","全部"],["home","居家上门"],["community","社区服务"],["org","养老机构"]];
   document.getElementById("screen").innerHTML = `
+    <div class="seg" style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:0;">
+      ${cats.map(([k,label])=>`<button data-action="pick-cat" data-cat="${k}" class="${state.resCat===k?'active':''}">${label}</button>`).join("")}
+    </div>
     <div class="card">
       <h3>服务资源</h3>
       ${resources.map(r=>`
@@ -299,7 +313,7 @@ async function renderElderService(){
             <div class="muted">${r.description||""} · ${r.duration_or_quota||""} · ${r.price_range||""}</div>
             <div class="muted">${r.location||""} ${r.event_time||""}</div>
           </div>
-        </div>`).join("")}
+        </div>`).join("") || "<div class='placeholder'>该分类暂无资源</div>"}
     </div>
     <div class="card">
       <h3 class="row between">预约下单（本人支付） <button class="btn sm" data-action="voice" data-field="服务项目与时间">🎤 语音输入</button></h3>
@@ -311,9 +325,29 @@ async function renderElderService(){
     </div>`;
 }
 
+async function renderElderSos(){
+  const [profile, sosSettings] = await Promise.all([api("/api/profile"), api("/api/sos/settings")]);
+  document.getElementById("screen").innerHTML = `
+    <div class="sos-big" data-action="sos"><span class="b">一键求助</span><span style="font-size:12px;margin-top:6px;">点击发起</span></div>
+    <div class="card">
+      <div class="row between"><strong>当前定位</strong><span class="muted">地图占位 · 可刷新</span></div>
+      <div class="muted" style="margin-top:8px;">${profile?.address||"地址待填"}</div>
+    </div>
+    <div class="card">
+      <h3>紧急联系人</h3>
+      <div class="list-card"><div class="info"><div class="t">子女（大女儿）</div><div class="muted">${profile?.emergency_contact||"电话占位 · 一键拨打"}</div></div><span>☎</span></div>
+    </div>
+    <div class="card">
+      <div class="row between" style="margin-bottom:10px;"><span>跌倒检测</span><input type="checkbox" id="sosFall" ${sosSettings.fall_detection?"checked":""}></div>
+      <div class="row between" style="margin-bottom:10px;"><span>防走失围栏</span><input type="checkbox" id="sosGeo" ${sosSettings.geofence?"checked":""}></div>
+      <div class="row between"><span>长时间无活动提醒</span><input type="checkbox" id="sosIdle" ${sosSettings.idle_reminder?"checked":""}></div>
+      <button class="btn" style="margin-top:10px;" data-action="save-sos-settings">保存安全开关</button>
+    </div>`;
+}
+
 async function renderElderMine(){
-  const [profile, messages, settings, sosSettings] = await Promise.all([
-    api("/api/profile"), api("/api/messages"), api("/api/settings"), api("/api/sos/settings"),
+  const [profile, messages, settings, sosSettings, orders] = await Promise.all([
+    api("/api/profile"), api("/api/messages"), api("/api/settings"), api("/api/sos/settings"), api("/api/orders"),
   ]);
   document.getElementById("screen").innerHTML = `
     <div class="card">
@@ -349,6 +383,16 @@ async function renderElderMine(){
       <div class="row between"><span>长时间无活动提醒</span><input type="checkbox" id="sosIdle" ${sosSettings.idle_reminder?"checked":""}></div>
       <button class="btn" style="margin-top:10px;" data-action="save-sos-settings">保存安全开关</button>
     </div>
+    <div class="card">
+      <h3>我的订单</h3>
+      ${orders.map(o=>`
+        <div class="list-card">
+          <div class="info">
+            <div class="t">${o.service_item} <span class="tag ${o.status==="in_progress"?"ok":""}">${ORDER_STATUS[o.status]||o.status}</span></div>
+            <div class="muted">¥${o.amount} · ${o.appointment_time||""} ${o.address||""}</div>
+          </div>
+        </div>`).join("") || "<div class='placeholder'>暂无订单</div>"}
+    </div>
     <button class="btn warn" data-action="logout">退出登录</button>`;
 }
 
@@ -363,7 +407,17 @@ async function renderFamily(){
 async function renderFamilyHome(){
   const overviews = await api("/api/family/overviews");
   if (state.detailElder) return renderFamilyDetail(state.detailElder);
+  if (state.famBrowse) return renderFamilyBrowse(overviews);
+  const first = overviews[0];
   document.getElementById("screen").innerHTML = `
+    <div class="card">
+      <div class="grid4">
+        <div class="gitem" data-action="goto-detail" data-elder="${first?first.elder_id:""}"><div class="ic">详情</div><span>查看详情</span></div>
+        <div class="gitem" data-tab="alert"><div class="ic">告警</div><span>告警动态</span></div>
+        <div class="gitem" data-tab="order"><div class="ic">代办</div><span>代下单</span></div>
+        <div class="gitem" data-action="browse-resources"><div class="ic">资源</div><span>找服务</span></div>
+      </div>
+    </div>
     ${overviews.map(o=>`
       <div class="list-card" data-action="goto-detail" data-elder="${o.elder_id}">
         <div class="info">
@@ -373,6 +427,23 @@ async function renderFamilyHome(){
         </div>
         <span class="arrow">›</span>
       </div>`).join("") || "<div class='placeholder'>尚未绑定老人</div>"}`;
+}
+
+async function renderFamilyBrowse(overviews){
+  const resources = await api("/api/resources");
+  document.getElementById("backBtn").style.visibility = "visible";
+  document.getElementById("screen").innerHTML = `
+    <div class="card">
+      <h3 class="row between">资源浏览 <button class="btn sm" data-action="browse-back">返回概览</button></h3>
+      ${resources.map(r=>`
+        <div class="list-card">
+          <div class="info">
+            <div class="t">${r.name}</div>
+            <div class="muted">${r.description||""} · ${r.duration_or_quota||""} · ${r.price_range||""}</div>
+            <div class="muted">${r.location||""} ${r.event_time||""}</div>
+          </div>
+        </div>`).join("") || "<div class='placeholder'>暂无资源</div>"}
+    </div>`;
 }
 
 async function renderFamilyDetail(elderId){
@@ -473,6 +544,21 @@ document.addEventListener("click", async (e)=>{
     }
     if (a === "pick-login-end") {
       state.loginEnd = act.dataset.end;
+      render();
+      return;
+    }
+    if (a === "pick-cat") {
+      state.resCat = act.dataset.cat;
+      render();
+      return;
+    }
+    if (a === "browse-resources") {
+      state.famBrowse = true;
+      render();
+      return;
+    }
+    if (a === "browse-back") {
+      state.famBrowse = false;
       render();
       return;
     }
@@ -577,7 +663,7 @@ document.addEventListener("click", async (e)=>{
 });
 
 document.getElementById("backBtn").addEventListener("click", ()=>{
-  state.detailElder = null; render();
+  state.detailElder = null; state.famBrowse = false; render();
 });
 
 async function switchEnd(end){
