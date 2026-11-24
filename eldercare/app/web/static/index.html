@@ -224,6 +224,11 @@ async function renderElderHealth(){
       <div class="field"><label>类型</label><select id="vType">
         <option value="bp">血压</option><option value="glucose">血糖</option>
         <option value="heart_rate">心率</option><option value="weight">体重</option></select></div>
+      <div class="field"><label>录入来源</label><select id="vSource" onchange="document.getElementById('vDeviceField').style.display=this.value==='device'?'block':'none'">
+        <option value="manual">手动填写</option><option value="device">智能设备同步</option></select></div>
+      <div class="field" id="vDeviceField" style="display:none;"><label>设备类型</label><select id="vDevice">
+        <option value="band">手环</option><option value="bp_monitor">血压计</option>
+        <option value="glucose_meter">血糖仪</option><option value="scale">体重秤</option></select></div>
       <div class="field"><label>数值（血压格式 收缩压/舒张压）</label><input id="vValue" placeholder="如 122/78"></div>
       <button class="btn primary" data-action="add-vital">保存体征</button>
     </div>
@@ -426,7 +431,9 @@ document.addEventListener("click", async (e)=>{
     else if (a === "add-vital") {
       const type = document.getElementById("vType").value;
       const value = document.getElementById("vValue").value.trim();
-      await api("/api/vitals", "POST", { type, value, unit:"" });
+      const source = document.getElementById("vSource").value;
+      const device_type = source === "device" ? document.getElementById("vDevice").value : null;
+      await api("/api/vitals", "POST", { type, value, unit:"", source, device_type });
       toast("体征已保存");
     }
     else if (a === "add-med") {

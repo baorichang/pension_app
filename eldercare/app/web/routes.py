@@ -41,6 +41,8 @@ class VitalBody(BaseModel):
     type: str
     value: str
     unit: str = ""
+    source: str = "manual"
+    device_type: Optional[str] = None
     idempotency_key: Optional[str] = None
 
 
@@ -138,7 +140,8 @@ def list_vitals(request: Request, conn: Conn = Depends(get_conn)):
 async def add_vital(body: VitalBody, request: Request, conn: Conn = Depends(get_conn)):
     uid = _uid(request)
     vital = health.add_vital(conn, uid, body.type, body.value, body.unit,
-                             idempotency_key=body.idempotency_key)
+                             idempotency_key=body.idempotency_key,
+                             source=body.source, device_type=body.device_type)
     alert = alerts.evaluate_vitals(conn, uid, vital)
     if alert:
         await hub.broadcast_to_families(conn, uid, {"type": "alert_new", "data": alert})

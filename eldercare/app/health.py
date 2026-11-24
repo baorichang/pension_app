@@ -43,8 +43,17 @@ def _validate_vital(vtype: str, value: str) -> str:
 
 
 def add_vital(conn, elder_id: int, vtype: str, value: str, unit: str = "",
-              measured_at: str | None = None, idempotency_key: str | None = None) -> dict:
+              measured_at: str | None = None, idempotency_key: str | None = None,
+              source: str = models.VIT_SOURCE_MANUAL,
+              device_type: str | None = None) -> dict:
     value = _validate_vital(vtype, value)
+    if source not in models.VIT_SOURCES:
+        raise errors.ValidationError("录入来源无效（manual/device）")
+    if source == models.VIT_SOURCE_DEVICE:
+        if device_type and device_type not in models.DEVICE_TYPES:
+            raise errors.ValidationError("设备类型无效")
+    else:
+        device_type = None
     now = db.utc_now()
     measured_at = measured_at or now
 
@@ -56,9 +65,11 @@ def add_vital(conn, elder_id: int, vtype: str, value: str, unit: str = "",
             return dict(dup)
 
     cur = conn.execute(
-        "INSERT INTO vitals (elder_id, type, value, unit, measured_at, recorded_by, "
-        "idempotency_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (elder_id, vtype, value, unit, measured_at, "elder", idempotency_key, now, now),
+        "INSERT INTO vitals (elder_id, type, value, unit, source, device_type, measured_at, "
+        "recorded_by, idempotency_key, created_at, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (elder_id, vtype, value, unit, source, device_type, measured_at, "elder",
+         idempotency_key, now, now),
     )
     vital_id = cur.lastrowid
     db.record_change(conn, "vitals", vital_id, elder_id, "create", f"录入{vtype}", "elder", now)

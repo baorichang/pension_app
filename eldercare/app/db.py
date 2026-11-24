@@ -75,6 +75,9 @@ def init_db(conn: sqlite3.Connection) -> None:
             type             TEXT NOT NULL CHECK (type IN ('bp','glucose','heart_rate','weight')),
             value            TEXT NOT NULL,
             unit             TEXT,
+            source           TEXT NOT NULL DEFAULT 'manual'
+                             CHECK (source IN ('manual','device')),
+            device_type      TEXT,
             measured_at      TEXT NOT NULL,
             recorded_by      TEXT,
             idempotency_key  TEXT UNIQUE,

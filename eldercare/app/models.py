@@ -16,6 +16,18 @@ VIT_HEART = "heart_rate"
 VIT_WEIGHT = "weight"
 VITALS_TYPES = (VIT_BP, VIT_GLUCOSE, VIT_HEART, VIT_WEIGHT)
 
+# 体征录入来源
+VIT_SOURCE_MANUAL = "manual"      # 手动输入
+VIT_SOURCE_DEVICE = "device"     # 智能设备自动同步
+VIT_SOURCES = (VIT_SOURCE_MANUAL, VIT_SOURCE_DEVICE)
+
+# 智能设备类型
+DEVICE_BAND = "band"                  # 手环（心率/步数/体重等）
+DEVICE_BP_MONITOR = "bp_monitor"      # 血压计
+DEVICE_GLUCOSE_METER = "glucose_meter"  # 血糖仪
+DEVICE_SCALE = "scale"                 # 体重秤
+DEVICE_TYPES = (DEVICE_BAND, DEVICE_BP_MONITOR, DEVICE_GLUCOSE_METER, DEVICE_SCALE)
+
 # 服药状态
 MED_TAKEN = "taken"
 MED_MISSED = "missed"
