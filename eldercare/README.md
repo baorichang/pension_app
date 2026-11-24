@@ -106,7 +106,13 @@ eldercare/
     ├── test_stage3_family_alert.py     # 阶段 3：家属概览/详情/告警
     ├── test_stage4_resource_order.py  # 阶段 4：资源/订单状态机
     ├── test_stage5_message_consent_setting.py  # 阶段 5：消息/授权/设置/语音
-    └── test_stage6_consistency.py     # 阶段 6：T-C1 ~ T-C14 一致性专项
+    ├── test_stage6_consistency.py     # 阶段 6：T-C1 ~ T-C14 一致性专项
+    ├── test_stage7_vital_source.py     # 问题 1：手动/智能设备录入来源
+    ├── test_stage8_vital_entry.py     # 问题 2：按类型点击录入与过滤
+    ├── test_stage9_server_time.py      # 问题 3：操作时间取服务端系统时间
+    ├── test_stage10_login_ui.py       # 问题 4：登录界面要素与链路
+    ├── test_stage11_prototype.py      # 问题 5：导航/分类/入口对齐原型
+    └── test_stage12_badge.py          # 问题 6：未读消息/告警角标计数
 ```
 
 ## 四、已实现模块（对应开发计划阶段）
@@ -155,7 +161,7 @@ eldercare/
 
 ## 八、测试结果
 
-当前全量 **60 个用例全部通过**（阶段 0–6 + 一致性专项）。运行：
+当前全量 **83 个用例全部通过**（阶段 0–6 一致性专项 + 问题 1–6 专项）。运行：
 
 ```bash
 python -m pytest -v
