@@ -89,7 +89,7 @@ const VIT_LABEL = { bp:"血压", glucose:"血糖", heart_rate:"心率", weight:"
 const ORDER_STATUS = { pending_pay:"待付款", in_progress:"进行中", completed:"已完成", after_sale:"售后" };
 const ALERT_LABEL = { SOS:"SOS 求助", vitals_abnormal:"体征异常", missed_med:"漏服药", geofence:"离开围栏", idle:"长时间无活动" };
 
-let state = { end:"elder", uid:null, role:null, tab:"home", detailElder:null, vitalType:null };
+let state = { end:"elder", uid:null, role:null, tab:"home", detailElder:null, vitalType:null, authed:false, loginEnd:"elder" };
 let ws = null;
 
 // ---------- 接口封装 ----------
@@ -111,12 +111,20 @@ function toast(msg){
 }
 
 // ---------- 登录与连接 ----------
-async function login(end){
+async function doLogin(phone, code, end){
   const d = DEMO[end];
-  const u = await api("/api/auth/login", "POST", { phone:d.phone, role:d.role, code:"123456" }, false);
-  state.uid = u.user_id; state.role = u.role; state.end = end;
+  const u = await api("/api/auth/login", "POST", { phone, role:d.role, code }, false);
+  state.uid = u.user_id; state.role = u.role; state.end = end; state.loginEnd = end;
+  state.authed = true; state.tab = "home"; state.detailElder = null;
   localStorage.setItem("ec_user", JSON.stringify({ end, uid:u.user_id }));
   document.getElementById("who").textContent = `${d.label} · ${u.phone}`;
+}
+
+function logout(){
+  state.authed = false; state.uid = null; state.role = null;
+  localStorage.removeItem("ec_user");
+  document.getElementById("who").textContent = "未登录";
+  render();
 }
 
 function connectWS(){
@@ -154,8 +162,15 @@ function renderTabbar(){
 }
 
 async function render(){
-  renderTabbar();
   const screen = document.getElementById("screen");
+  if (!state.authed) {
+    document.getElementById("tabbar").innerHTML = "";
+    document.getElementById("appTitle").textContent = "登录";
+    document.getElementById("backBtn").style.visibility = "hidden";
+    renderLogin();
+    return;
+  }
+  renderTabbar();
   screen.innerHTML = `<div class="placeholder">加载中…</div>`;
   try {
     if (state.end === "elder") await renderElder();
@@ -166,6 +181,28 @@ async function render(){
 }
 
 function refreshCurrent(){ render(); }
+
+// ---------- 登录视图 ----------
+function renderLogin(){
+  const d = DEMO[state.loginEnd];
+  document.getElementById("screen").innerHTML = `
+    <div style="text-align:center;margin-top:26px;">
+      <div style="width:84px;height:84px;border:2px solid var(--ink);border-radius:24px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);">Logo</div>
+      <h2 style="font-size:20px;margin-bottom:6px;">养老服务 App</h2>
+      <p class="muted">安心居家 · 就近照护</p>
+    </div>
+    <div class="seg" style="margin:22px auto 16px;width:fit-content;">
+      <button data-action="pick-login-end" data-end="elder" class="${state.loginEnd==='elder'?'active':''}">老人端</button>
+      <button data-action="pick-login-end" data-end="family" class="${state.loginEnd==='family'?'active':''}">子女端</button>
+    </div>
+    <div class="card">
+      <div class="field"><label>手机号</label><input id="lPhone" value="${d.phone}"></div>
+      <div class="field"><label>验证码（演示固定 123456）</label><input id="lCode" value="123456"></div>
+      <label class="row" style="gap:8px;font-size:12px;margin:6px 0 12px;"><input type="checkbox" id="lAgree" checked> 同意隐私政策与用户协议</label>
+      <button class="btn primary" data-action="login">登录</button>
+    </div>
+    <div class="muted" style="text-align:center;">定位、健康等信息需本人授权后使用（占位说明）</div>`;
+}
 
 // ---------- 老人端视图 ----------
 async function renderElder(){
@@ -311,7 +348,8 @@ async function renderElderMine(){
       <div class="row between" style="margin-bottom:10px;"><span>防走失围栏</span><input type="checkbox" id="sosGeo" ${sosSettings.geofence?"checked":""}></div>
       <div class="row between"><span>长时间无活动提醒</span><input type="checkbox" id="sosIdle" ${sosSettings.idle_reminder?"checked":""}></div>
       <button class="btn" style="margin-top:10px;" data-action="save-sos-settings">保存安全开关</button>
-    </div>`;
+    </div>
+    <button class="btn warn" data-action="logout">退出登录</button>`;
 }
 
 // ---------- 子女端视图 ----------
@@ -407,7 +445,8 @@ async function renderFamilyMine(){
     <div class="card">
       <h3>说明</h3>
       <div class="muted">本演示为浏览器移动端界面，数据与老人端同源；告警与订单变更通过 WebSocket 实时推送刷新。</div>
-    </div>`;
+    </div>
+    <button class="btn warn" data-action="logout">退出登录</button>`;
 }
 
 // ---------- 事件 ----------
@@ -430,6 +469,22 @@ document.addEventListener("click", async (e)=>{
       state.vitalType = act.dataset.vtype;
       await render();
       setTimeout(()=>{ const v=document.getElementById("vValue"); if(v) v.focus(); }, 60);
+      return;
+    }
+    if (a === "pick-login-end") {
+      state.loginEnd = act.dataset.end;
+      render();
+      return;
+    }
+    if (a === "login") {
+      const phone = document.getElementById("lPhone").value.trim();
+      const code = document.getElementById("lCode").value.trim();
+      const agree = document.getElementById("lAgree").checked;
+      if (!agree) { toast("请先同意隐私政策与用户协议"); return; }
+      if (!phone) { toast("请输入手机号"); return; }
+      await doLogin(phone, code, state.loginEnd);
+      connectWS();
+      render();
       return;
     }
     if (a === "sos") {
@@ -484,6 +539,10 @@ document.addEventListener("click", async (e)=>{
     else if (a === "read-message") {
       await api(`/api/messages/${act.dataset.id}/read`, "POST");
     }
+    else if (a === "logout") {
+      logout();
+      return;
+    }
     else if (a === "goto-detail") {
       state.detailElder = Number(act.dataset.elder); render(); return;
     }
@@ -523,15 +582,15 @@ document.getElementById("backBtn").addEventListener("click", ()=>{
 
 async function switchEnd(end){
   state.tab = "home"; state.detailElder = null;
-  await login(end); connectWS(); render();
+  await doLogin(DEMO[end].phone, "123456", end);
+  connectWS(); render();
 }
 
-// 启动
+// 启动：先进入登录界面，不自动登录
 (async function boot(){
   const saved = JSON.parse(localStorage.getItem("ec_user")||"null");
-  state.end = saved?.end || "elder";
-  await login(state.end);
-  connectWS();
+  state.loginEnd = saved?.end || "elder";
+  state.end = state.loginEnd;
   render();
 })();
 </script>
