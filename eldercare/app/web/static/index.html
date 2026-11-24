@@ -89,7 +89,7 @@ const VIT_LABEL = { bp:"血压", glucose:"血糖", heart_rate:"心率", weight:"
 const ORDER_STATUS = { pending_pay:"待付款", in_progress:"进行中", completed:"已完成", after_sale:"售后" };
 const ALERT_LABEL = { SOS:"SOS 求助", vitals_abnormal:"体征异常", missed_med:"漏服药", geofence:"离开围栏", idle:"长时间无活动" };
 
-let state = { end:"elder", uid:null, role:null, tab:"home", detailElder:null };
+let state = { end:"elder", uid:null, role:null, tab:"home", detailElder:null, vitalType:null };
 let ws = null;
 
 // ---------- 接口封装 ----------
@@ -210,20 +210,22 @@ async function renderElderHealth(){
   const [vitals, meds] = await Promise.all([api("/api/vitals"), api("/api/medications")]);
   const latest = {};
   vitals.forEach(v=>{ if(!latest[v.type]) latest[v.type]=v; });
+  const selType = state.vitalType || "heart_rate";
   document.getElementById("screen").innerHTML = `
     <div class="card">
-      <h3>体征记录</h3>
+      <h3 class="row between">体征记录 <span class="muted">点击下方类型即可录入</span></h3>
       <div class="grid4">
         ${Object.keys(VIT_LABEL).map(k=>`
-          <div class="gitem"><div class="ic">${VIT_LABEL[k]}</div>
-          <span>${latest[k]?latest[k].value:"--"}</span></div>`).join("")}
+          <div class="gitem" data-action="pick-vital" data-vtype="${k}">
+            <div class="ic">${VIT_LABEL[k]}</div>
+            <span>${latest[k]?latest[k].value:"--"}</span>
+          </div>`).join("")}
       </div>
     </div>
     <div class="card">
       <h3 class="row between">录入体征 <button class="btn sm" data-action="voice" data-field="体征数值">🎤 语音输入</button></h3>
-      <div class="field"><label>类型</label><select id="vType">
-        <option value="bp">血压</option><option value="glucose">血糖</option>
-        <option value="heart_rate">心率</option><option value="weight">体重</option></select></div>
+      <div class="field"><label>类型（点击上方体征卡片自动选择）</label><select id="vType">
+        ${Object.keys(VIT_LABEL).map(k=>`<option value="${k}" ${selType===k?"selected":""}>${VIT_LABEL[k]}</option>`).join("")}</select></div>
       <div class="field"><label>录入来源</label><select id="vSource" onchange="document.getElementById('vDeviceField').style.display=this.value==='device'?'block':'none'">
         <option value="manual">手动填写</option><option value="device">智能设备同步</option></select></div>
       <div class="field" id="vDeviceField" style="display:none;"><label>设备类型</label><select id="vDevice">
@@ -422,6 +424,12 @@ document.addEventListener("click", async (e)=>{
   try {
     if (a === "voice") {
       toast(`「${act.dataset.field}」语音输入为首版占位，正式版接入语音转写`);
+      return;
+    }
+    if (a === "pick-vital") {
+      state.vitalType = act.dataset.vtype;
+      await render();
+      setTimeout(()=>{ const v=document.getElementById("vValue"); if(v) v.focus(); }, 60);
       return;
     }
     if (a === "sos") {

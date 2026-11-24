@@ -132,8 +132,8 @@ def put_profile(body: ProfileBody, request: Request, conn: Conn = Depends(get_co
 
 
 @router.get("/api/vitals")
-def list_vitals(request: Request, conn: Conn = Depends(get_conn)):
-    return errors.ok(health.list_vitals(conn, _uid(request)))
+def list_vitals(type: Optional[str] = None, request: Request = None, conn: Conn = Depends(get_conn)):
+    return errors.ok(health.list_vitals(conn, _uid(request), type))
 
 
 @router.post("/api/vitals")
