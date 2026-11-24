@@ -30,18 +30,22 @@
   .phone{position:relative;width:400px;max-width:100%;height:800px;background:#f3f6f8;border:1px solid #cfd9df;border-radius:40px;overflow:hidden;
     display:flex;flex-direction:column;box-shadow:0 24px 50px rgba(31,56,76,.22);}
   .status{height:30px;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:12px;color:var(--ink);}
-  .status-icons{display:flex;align-items:center;gap:7px;}
-  .sig{display:flex;align-items:flex-end;gap:2px;}
+  .status-icons{display:flex;align-items:center;gap:8px;color:var(--ink);}
+  .sig{display:flex;align-items:flex-end;gap:2px;height:12px;}
   .sig i{width:3px;background:var(--ink);border-radius:1px;}
   .sig i:nth-child(1){height:4px;}
   .sig i:nth-child(2){height:6px;}
   .sig i:nth-child(3){height:8px;}
   .sig i:nth-child(4){height:10px;}
-  .wifi{font-size:13px;line-height:1;}
+  .wifi{position:relative;width:16px;height:12px;display:inline-block;}
+  .wifi i{position:absolute;left:50%;transform:translateX(-50%);border:2px solid var(--ink);border-color:var(--ink) transparent transparent transparent;border-radius:50%;}
+  .wifi i:nth-child(1){top:0;width:16px;height:16px;}
+  .wifi i:nth-child(2){top:4px;width:10px;height:10px;}
+  .wifi i:nth-child(3){top:9px;width:3px;height:3px;background:var(--ink);border:none;}
   .batt{display:flex;align-items:center;gap:4px;}
   .batt-shell{position:relative;width:22px;height:11px;border:1.2px solid var(--ink);border-radius:3px;padding:1.5px;}
   .batt-shell::after{content:"";position:absolute;right:-3.5px;top:3px;width:2px;height:5px;background:var(--ink);border-radius:0 1px 1px 0;}
-  .batt-level{display:block;height:100%;width:82%;background:var(--ok);border-radius:1.5px;}
+  .batt-level{display:block;height:100%;width:82%;background:var(--ink);border-radius:1.5px;}
   .batt-text{font-size:11px;color:var(--ink);}
   .appbar{height:54px;display:flex;align-items:center;padding:0 18px;border-bottom:1px solid var(--line);background:#fff;}
   .appbar .title{font-size:18px;font-weight:700;}
@@ -129,8 +133,9 @@
   .ai-ball{position:absolute;right:18px;bottom:88px;width:56px;height:56px;border-radius:50%;
     background:linear-gradient(135deg,var(--primary) 0%,var(--primary-deep) 100%);color:#fff;
     display:none;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;
-    box-shadow:0 10px 22px rgba(31,122,140,.35);z-index:30;}
+    box-shadow:0 10px 22px rgba(31,122,140,.35);z-index:30;touch-action:none;user-select:none;-webkit-user-select:none;}
   .ai-ball:active{transform:scale(.95);}
+  .ai-ball.dragging{cursor:grabbing;transform:scale(1.06);transition:none;}
 
   /* AI 对话面板 */
   .ai-panel{position:absolute;inset:0;background:#f3f6f8;display:none;flex-direction:column;z-index:40;}
@@ -170,7 +175,7 @@
         <span id="statusClock" class="clock">--:--</span>
         <span class="status-icons">
           <span class="sig"><i></i><i></i><i></i><i></i></span>
-          <span class="wifi">📶</span>
+          <span class="wifi"><i></i><i></i><i></i></span>
           <span class="batt"><span class="batt-shell"><span class="batt-level"></span></span><span class="batt-text">82%</span></span>
         </span>
       </div>
@@ -206,7 +211,7 @@ const ALERT_STATUS = { unread:"未读", read:"已读", contacted:"已联系" };
 const MED_STATUS = { taken:"已服", untaken:"未服", missed:"漏服" };
 const SERVICE_ITEMS = ["助洁服务","助浴服务","陪诊服务","代购代办","上门理发","康复护理","送餐服务"];
 
-let state = { end:"elder", uid:null, role:null, tab:"home", detailElder:null, vitalType:null, authed:false, loginEnd:"elder", resCat:"", famBrowse:false, unreadMsgs:0, unreadAlerts:0, aiOpen:false, aiVisible: localStorage.getItem("ec_ai_ball") !== "0", aiMessages: [] };
+let state = { end:"elder", uid:null, role:null, tab:"home", detailElder:null, vitalType:null, authed:false, loginEnd:"elder", resCat:"", famBrowse:false, unreadMsgs:0, unreadAlerts:0, aiOpen:false, aiVisible: localStorage.getItem("ec_ai_ball") !== "0", aiMessages: [], aiPos: JSON.parse(localStorage.getItem("ec_ai_pos")||"null") };
 let ws = null;
 
 // ---------- 接口封装 ----------
@@ -283,6 +288,52 @@ function renderAiBall(){
   const ball = document.getElementById("aiBall");
   if (!ball) return;
   ball.style.display = (state.authed && state.aiVisible && !state.aiOpen) ? "flex" : "none";
+  if (state.aiPos){
+    ball.style.left = state.aiPos.x + "px";
+    ball.style.top = state.aiPos.y + "px";
+    ball.style.right = "auto";
+    ball.style.bottom = "auto";
+  }
+}
+
+// 悬浮球拖拽：移动超过阈值记为拖拽，位置持久化，不触发打开面板
+let ballDrag = null, suppressBallClick = false;
+function initBallDrag(){
+  const ball = document.getElementById("aiBall");
+  const phone = document.querySelector(".phone");
+  if (!ball || !phone) return;
+  ball.addEventListener("pointerdown", (e)=>{
+    if (!state.authed) return;
+    const rect = ball.getBoundingClientRect();
+    const pr = phone.getBoundingClientRect();
+    ballDrag = { startX:e.clientX, startY:e.clientY, offX:rect.left-pr.left, offY:rect.top-pr.top, moved:false };
+    try{ ball.setPointerCapture(e.pointerId); }catch(err){}
+    ball.classList.add("dragging");
+  });
+  ball.addEventListener("pointermove", (e)=>{
+    if (!ballDrag) return;
+    const pr = phone.getBoundingClientRect();
+    const bw = ball.offsetWidth, bh = ball.offsetHeight;
+    if (Math.abs(e.clientX-ballDrag.startX) + Math.abs(e.clientY-ballDrag.startY) > 6) ballDrag.moved = true;
+    let nx = ballDrag.offX + (e.clientX - ballDrag.startX);
+    let ny = ballDrag.offY + (e.clientY - ballDrag.startY);
+    nx = Math.max(8, Math.min(pr.width-bw-8, nx));
+    ny = Math.max(8, Math.min(pr.height-bh-8, ny));
+    ball.style.left = nx + "px";
+    ball.style.top = ny + "px";
+    ball.style.right = "auto";
+    ball.style.bottom = "auto";
+  });
+  ball.addEventListener("pointerup", ()=>{
+    if (!ballDrag) return;
+    ball.classList.remove("dragging");
+    if (ballDrag.moved){
+      state.aiPos = { x:parseFloat(ball.style.left), y:parseFloat(ball.style.top) };
+      localStorage.setItem("ec_ai_pos", JSON.stringify(state.aiPos));
+      suppressBallClick = true;
+    }
+    ballDrag = null;
+  });
 }
 
 function renderAiMsgs(){
@@ -727,6 +778,7 @@ async function renderFamilyMine(){
 
 // ---------- 事件 ----------
 document.addEventListener("click", async (e)=>{
+  if (e.target.closest("#aiBall") && suppressBallClick){ suppressBallClick = false; return; }
   const tab = e.target.closest("[data-tab]");
   if (tab) { state.tab = tab.dataset.tab; state.detailElder = null; render(); return; }
 
@@ -895,6 +947,7 @@ async function switchEnd(end){
   state.end = state.loginEnd;
   updateClock();
   setInterval(updateClock, 1000);
+  initBallDrag();
   render();
 })();
 </script>

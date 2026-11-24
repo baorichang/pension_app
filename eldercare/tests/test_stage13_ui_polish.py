@@ -31,8 +31,11 @@ def test_alert_status_localized():
 
 def test_status_bar_clock_and_icons():
     html = _html()
-    for token in ('id="statusClock"', "updateClock", "status-icons", "batt-shell", "batt-level"):
+    for token in ('id="statusClock"', "updateClock", "status-icons", "batt-shell", "batt-level",
+                   '<span class="wifi">', ".wifi i"):
         assert token in html, f"状态栏缺少要素 {token}"
+    # WiFi 不再使用 emoji 占位
+    assert "📶" not in html
 
 
 def test_ai_assistant_floating_ball():
@@ -41,5 +44,6 @@ def test_ai_assistant_floating_ball():
         'class="ai-ball"', 'id="aiBall"', 'id="aiPanel"', 'id="aiMsgs"', 'id="aiInput"',
         'data-action="open-ai"', 'data-action="close-ai"', 'data-action="send-ai"',
         "aiReply", "renderAiBall", "ec_ai_ball", 'id="setAiBall"',
+        "initBallDrag", "ec_ai_pos", "ballDrag", "state.aiPos",
     ):
         assert token in html, f"AI 助手缺少要素 {token}"
