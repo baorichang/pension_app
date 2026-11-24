@@ -27,9 +27,22 @@
 
   /* 手机壳 */
   .stage{display:flex;justify-content:center;padding:18px 16px 34px;}
-  .phone{width:400px;max-width:100%;height:800px;background:#f3f6f8;border:1px solid #cfd9df;border-radius:40px;overflow:hidden;
+  .phone{position:relative;width:400px;max-width:100%;height:800px;background:#f3f6f8;border:1px solid #cfd9df;border-radius:40px;overflow:hidden;
     display:flex;flex-direction:column;box-shadow:0 24px 50px rgba(31,56,76,.22);}
-  .status{height:30px;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:12px;color:var(--muted);}
+  .status{height:30px;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:12px;color:var(--ink);}
+  .status-icons{display:flex;align-items:center;gap:7px;}
+  .sig{display:flex;align-items:flex-end;gap:2px;}
+  .sig i{width:3px;background:var(--ink);border-radius:1px;}
+  .sig i:nth-child(1){height:4px;}
+  .sig i:nth-child(2){height:6px;}
+  .sig i:nth-child(3){height:8px;}
+  .sig i:nth-child(4){height:10px;}
+  .wifi{font-size:13px;line-height:1;}
+  .batt{display:flex;align-items:center;gap:4px;}
+  .batt-shell{position:relative;width:22px;height:11px;border:1.2px solid var(--ink);border-radius:3px;padding:1.5px;}
+  .batt-shell::after{content:"";position:absolute;right:-3.5px;top:3px;width:2px;height:5px;background:var(--ink);border-radius:0 1px 1px 0;}
+  .batt-level{display:block;height:100%;width:82%;background:var(--ok);border-radius:1.5px;}
+  .batt-text{font-size:11px;color:var(--ink);}
   .appbar{height:54px;display:flex;align-items:center;padding:0 18px;border-bottom:1px solid var(--line);background:#fff;}
   .appbar .title{font-size:18px;font-weight:700;}
   .appbar .back{cursor:pointer;font-size:22px;margin-right:10px;color:var(--primary);visibility:hidden;}
@@ -111,6 +124,34 @@
   .toast{position:fixed;left:50%;top:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .25s;z-index:99;box-shadow:0 10px 26px rgba(0,0,0,.25);}
   .toast.show{opacity:1;}
   .placeholder{color:var(--muted);font-size:13px;text-align:center;padding:20px;}
+
+  /* AI 助手悬浮球 */
+  .ai-ball{position:absolute;right:18px;bottom:88px;width:56px;height:56px;border-radius:50%;
+    background:linear-gradient(135deg,var(--primary) 0%,var(--primary-deep) 100%);color:#fff;
+    display:none;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;
+    box-shadow:0 10px 22px rgba(31,122,140,.35);z-index:30;}
+  .ai-ball:active{transform:scale(.95);}
+
+  /* AI 对话面板 */
+  .ai-panel{position:absolute;inset:0;background:#f3f6f8;display:none;flex-direction:column;z-index:40;}
+  .ai-head{height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;
+    background:#fff;border-bottom:1px solid var(--line);}
+  .ai-title{font-size:16px;font-weight:700;}
+  .ai-close{border:none;background:var(--soft);color:var(--muted);width:34px;height:34px;border-radius:10px;
+    font-size:15px;cursor:pointer;}
+  .ai-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+  .ai-msgs::-webkit-scrollbar{width:5px;}
+  .ai-msgs::-webkit-scrollbar-thumb{background:#c6d2d9;border-radius:5px;}
+  .ai-msg{max-width:78%;padding:11px 13px;border-radius:15px;font-size:14px;line-height:1.55;}
+  .ai-msg.ai{background:#fff;border:1px solid var(--line);border-top-left-radius:5px;align-self:flex-start;
+    box-shadow:0 1px 6px rgba(31,56,76,.05);}
+  .ai-msg.me{background:var(--primary);color:#fff;border-top-right-radius:5px;align-self:flex-end;}
+  .ai-input{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--line);background:#fff;}
+  .ai-input input{flex:1;height:44px;border:1px solid var(--line);border-radius:12px;padding:0 14px;font-size:15px;
+    background:var(--soft);outline:none;}
+  .ai-input input:focus{border-color:var(--primary);background:#fff;}
+  .ai-send{width:76px;height:44px;border:none;border-radius:12px;background:var(--primary);color:#fff;
+    font-size:15px;font-weight:600;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -125,10 +166,29 @@
 
   <div class="stage">
     <div class="phone">
-      <div class="status"><span>9:30</span><span>信号 · Wi-Fi · 电量</span></div>
+      <div class="status">
+        <span id="statusClock" class="clock">--:--</span>
+        <span class="status-icons">
+          <span class="sig"><i></i><i></i><i></i><i></i></span>
+          <span class="wifi">📶</span>
+          <span class="batt"><span class="batt-shell"><span class="batt-level"></span></span><span class="batt-text">82%</span></span>
+        </span>
+      </div>
       <div class="appbar"><span class="back" id="backBtn">‹</span><span class="title" id="appTitle"></span></div>
       <div class="screen" id="screen"></div>
       <div class="tabbar" id="tabbar"></div>
+      <div class="ai-ball" id="aiBall" data-action="open-ai" title="AI 助手">AI</div>
+      <div class="ai-panel" id="aiPanel">
+        <div class="ai-head">
+          <span class="ai-title">🤖 AI 智能助手</span>
+          <button class="ai-close" data-action="close-ai">✕</button>
+        </div>
+        <div class="ai-msgs" id="aiMsgs"></div>
+        <div class="ai-input">
+          <input id="aiInput" placeholder="请输入您的问题…" autocomplete="off">
+          <button class="ai-send" data-action="send-ai">发送</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -142,8 +202,11 @@ const DEMO = {
 const VIT_LABEL = { bp:"血压", glucose:"血糖", heart_rate:"心率", weight:"体重" };
 const ORDER_STATUS = { pending_pay:"待付款", in_progress:"进行中", completed:"已完成", after_sale:"售后" };
 const ALERT_LABEL = { SOS:"SOS 求助", vitals_abnormal:"体征异常", missed_med:"漏服药", geofence:"离开围栏", idle:"长时间无活动" };
+const ALERT_STATUS = { unread:"未读", read:"已读", contacted:"已联系" };
+const MED_STATUS = { taken:"已服", untaken:"未服", missed:"漏服" };
+const SERVICE_ITEMS = ["助洁服务","助浴服务","陪诊服务","代购代办","上门理发","康复护理","送餐服务"];
 
-let state = { end:"elder", uid:null, role:null, tab:"home", detailElder:null, vitalType:null, authed:false, loginEnd:"elder", resCat:"", famBrowse:false, unreadMsgs:0, unreadAlerts:0 };
+let state = { end:"elder", uid:null, role:null, tab:"home", detailElder:null, vitalType:null, authed:false, loginEnd:"elder", resCat:"", famBrowse:false, unreadMsgs:0, unreadAlerts:0, aiOpen:false, aiVisible: localStorage.getItem("ec_ai_ball") !== "0", aiMessages: [] };
 let ws = null;
 
 // ---------- 接口封装 ----------
@@ -164,6 +227,16 @@ function toast(msg){
   setTimeout(()=>t.classList.remove("show"), 1800);
 }
 
+// 状态栏时间：跟随系统时间实时刷新
+function updateClock(){
+  const el = document.getElementById("statusClock");
+  if (!el) return;
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,"0");
+  const mm = String(now.getMinutes()).padStart(2,"0");
+  el.textContent = `${hh}:${mm}`;
+}
+
 // ---------- 登录与连接 ----------
 async function doLogin(phone, code, end){
   const d = DEMO[end];
@@ -176,6 +249,7 @@ async function doLogin(phone, code, end){
 
 function logout(){
   state.authed = false; state.uid = null; state.role = null;
+  state.aiOpen = false;
   localStorage.removeItem("ec_user");
   document.getElementById("who").textContent = "未登录";
   render();
@@ -190,6 +264,58 @@ function connectWS(){
     toast(m.type === "alert_new" ? "收到新告警" : "数据已更新");
     refreshCurrent();
   };
+}
+
+// ---------- AI 助手（本地占位应答，后续可接入大模型接口） ----------
+const AI_WELCOME = "您好，我是养老助手，可以帮您了解健康记录、用药提醒、上门服务和紧急求助等问题。";
+
+function aiReply(text){
+  const t = text || "";
+  if (/(血压|血糖|心率|体重|体征|体温)/.test(t)) return "您可以在「健康」页查看和录入血压、血糖、心率、体重等体征；如指标异常，系统会自动提醒您的家属。";
+  if (/(服药|吃药|用药|药品|剂量)/.test(t)) return "请按用药提醒按时服药，「健康」页可查看用药计划并标记已服；漏服时家属会收到提醒。";
+  if (/(紧急|求助|sos|摔倒|跌倒|帮助)/i.test(t)) return "如遇紧急情况，请点击首页或底部中央的「SOS 一键求助」，系统会立即通知紧急联系人。";
+  if (/(服务|上门|预约|助洁|助浴|陪诊|护理|送餐|理发)/.test(t)) return "您可以在「服务」页浏览居家上门、社区服务和养老机构项目，选择项目后预约下单即可。";
+  if (/(你好|您好|在吗|hi|hello)/i.test(t)) return "您好，请问需要我帮您了解哪方面的内容？健康、用药、服务还是紧急求助？";
+  return "这是演示版的本地应答，暂未接入在线大模型。您可以换个说法，或咨询健康、用药、服务、求助相关问题。";
+}
+
+function renderAiBall(){
+  const ball = document.getElementById("aiBall");
+  if (!ball) return;
+  ball.style.display = (state.authed && state.aiVisible && !state.aiOpen) ? "flex" : "none";
+}
+
+function renderAiMsgs(){
+  const box = document.getElementById("aiMsgs");
+  if (!box) return;
+  box.innerHTML = state.aiMessages.map(m=>`
+    <div class="ai-msg ${m.role==="user"?"me":"ai"}">${m.text}</div>`).join("");
+  box.scrollTop = box.scrollHeight;
+}
+
+function openAi(){
+  state.aiOpen = true;
+  if (!state.aiMessages.length) state.aiMessages.push({role:"ai", text:AI_WELCOME});
+  document.getElementById("aiPanel").style.display = "flex";
+  renderAiMsgs();
+  renderAiBall();
+  setTimeout(()=>{ const i=document.getElementById("aiInput"); if(i) i.focus(); }, 60);
+}
+
+function closeAi(){
+  state.aiOpen = false;
+  document.getElementById("aiPanel").style.display = "none";
+  renderAiBall();
+}
+
+function sendAi(){
+  const input = document.getElementById("aiInput");
+  const text = input.value.trim();
+  if (!text) return;
+  state.aiMessages.push({role:"user", text});
+  input.value = "";
+  state.aiMessages.push({role:"ai", text:aiReply(text)});
+  renderAiMsgs();
 }
 
 // ---------- 导航与渲染 ----------
@@ -247,12 +373,16 @@ async function render(){
     document.getElementById("tabbar").innerHTML = "";
     document.getElementById("appTitle").textContent = "登录";
     document.getElementById("backBtn").style.visibility = "hidden";
+    state.aiOpen = false;
+    document.getElementById("aiPanel").style.display = "none";
+    renderAiBall();
     renderLogin();
     return;
   }
   renderTabbar();
   await refreshBadges();
   renderTabbar();
+  renderAiBall();
   screen.innerHTML = `<div class="placeholder">加载中…</div>`;
   try {
     if (state.end === "elder") await renderElder();
@@ -333,7 +463,7 @@ async function renderElderHealth(){
   const selType = state.vitalType || "heart_rate";
   document.getElementById("screen").innerHTML = `
     <div class="card">
-      <h3 class="row between">体征记录 <span class="muted">点击下方类型即可录入</span></h3>
+      <h3>体征记录</h3>
       <div class="grid4">
         ${Object.keys(VIT_LABEL).map(k=>`
           <div class="gitem" data-action="pick-vital" data-vtype="${k}">
@@ -391,7 +521,7 @@ async function renderElderService(){
     </div>
     <div class="card">
       <h3 class="row between">预约下单（本人支付） <button class="btn sm" data-action="voice" data-field="服务项目与时间">🎤 语音输入</button></h3>
-      <div class="field"><label>服务项目</label><input id="oItem" placeholder="如 助洁服务"></div>
+      <div class="field"><label>服务项目</label><select id="oItem">${SERVICE_ITEMS.map(s=>`<option value="${s}">${s}</option>`).join("")}</select></div>
       <div class="field"><label>金额</label><input id="oAmount" type="number" value="60"></div>
       <div class="field"><label>预约时间</label><input id="oTime" placeholder="如 明天 10:00"></div>
       <div class="field"><label>地址</label><input id="oAddress" placeholder="家庭住址"></div>
@@ -447,7 +577,8 @@ async function renderElderMine(){
       <h3>适老化设置</h3>
       <div class="row between" style="margin-bottom:10px;"><span>语音播报</span><input type="checkbox" id="setBroadcast" ${settings.voice_broadcast?"checked":""}></div>
       <div class="row between" style="margin-bottom:10px;"><span>高对比度</span><input type="checkbox" id="setContrast" ${settings.high_contrast?"checked":""}></div>
-      <div class="row between"><span>语音输入</span><input type="checkbox" id="setVoiceInput" ${settings.voice_input?"checked":""}></div>
+      <div class="row between" style="margin-bottom:10px;"><span>语音输入</span><input type="checkbox" id="setVoiceInput" ${settings.voice_input?"checked":""}></div>
+      <div class="row between"><span>AI 助手悬浮球</span><input type="checkbox" id="setAiBall" ${state.aiVisible?"checked":""}></div>
       <button class="btn" style="margin-top:10px;" data-action="save-settings">保存设置</button>
     </div>
     <div class="card">
@@ -532,7 +663,7 @@ async function renderFamilyDetail(elderId){
       ${d.vitals_history.map(v=>`<div class="muted" style="margin-bottom:6px;">${VIT_LABEL[v.type]} ${v.value} ${v.unit||""} · ${v.measured_at}</div>`).join("")||"<div class='placeholder'>暂无记录</div>"}
     </div>
     <div class="card"><h3>用药情况</h3>
-      ${d.medications.map(m=>`<div class="muted" style="margin-bottom:6px;">${m.name} ${m.dosage||""} · ${m.latest_log?("状态："+m.latest_log.status):"未记录"}</div>`).join("")||"<div class='placeholder'>暂无用药</div>"}
+      ${d.medications.map(m=>`<div class="muted" style="margin-bottom:6px;">${m.name} ${m.dosage||""} · ${m.latest_log?("状态："+(MED_STATUS[m.latest_log.status]||m.latest_log.status)):"未记录"}</div>`).join("")||"<div class='placeholder'>暂无用药</div>"}
     </div>
     <div class="card"><h3>历史订单</h3>
       ${d.service_records.map(o=>`<div class="muted" style="margin-bottom:6px;">${o.service_item} · ${ORDER_STATUS[o.status]||o.status}</div>`).join("")||"<div class='placeholder'>暂无订单</div>"}
@@ -547,7 +678,7 @@ async function renderFamilyAlert(){
         <div class="tl">
           <span class="tag ${a.status==="unread"?"red":""}">${ALERT_LABEL[a.type]||a.type}</span>
           <div class="muted" style="margin:4px 0;">${a.content||""} · ${a.occurred_at}</div>
-          <div class="muted">${a.location||""} · 状态：${a.status}
+          <div class="muted">${a.location||""} · 状态：${ALERT_STATUS[a.status]||a.status}
             <button class="btn sm" style="margin-left:8px;" data-action="read-alert" data-id="${a.alert_id}" data-status="read">标记已读</button>
           </div>
         </div>`).join("") || "<div class='placeholder'>暂无告警</div>"}
@@ -562,7 +693,7 @@ async function renderFamilyOrder(){
       <div class="field"><label>选择老人</label><select id="fElder">
         ${overviews.map(o=>`<option value="${o.elder_id}">${o.name||"老人"}</option>`).join("")}
       </select></div>
-      <div class="field"><label>服务项目</label><input id="fItem" placeholder="如 陪诊服务"></div>
+      <div class="field"><label>服务项目</label><select id="fItem">${SERVICE_ITEMS.map(s=>`<option value="${s}">${s}</option>`).join("")}</select></div>
       <div class="field"><label>金额</label><input id="fAmount" type="number" value="100"></div>
       <div class="field"><label>预约时间 / 地址</label><input id="fTime" placeholder="时间、地址"></div>
       <button class="btn primary" data-action="order-family">确认代付下单</button>
@@ -606,6 +737,9 @@ document.addEventListener("click", async (e)=>{
   if (!act) return;
   const a = act.dataset.action;
   try {
+    if (a === "open-ai") { openAi(); return; }
+    if (a === "close-ai") { closeAi(); return; }
+    if (a === "send-ai") { sendAi(); return; }
     if (a === "voice") {
       toast(`「${act.dataset.field}」语音输入为首版占位，正式版接入语音转写`);
       return;
@@ -722,6 +856,10 @@ document.addEventListener("click", async (e)=>{
         high_contrast: document.getElementById("setContrast").checked?1:0,
         voice_input: document.getElementById("setVoiceInput").checked?1:0,
       });
+      const aiBall = document.getElementById("setAiBall").checked;
+      state.aiVisible = aiBall;
+      localStorage.setItem("ec_ai_ball", aiBall ? "1" : "0");
+      renderAiBall();
       toast("设置已保存");
     }
     else if (a === "save-sos-settings") {
@@ -740,6 +878,10 @@ document.getElementById("backBtn").addEventListener("click", ()=>{
   state.detailElder = null; state.famBrowse = false; render();
 });
 
+document.getElementById("aiInput").addEventListener("keydown", (e)=>{
+  if (e.key === "Enter") sendAi();
+});
+
 async function switchEnd(end){
   state.tab = "home"; state.detailElder = null;
   await doLogin(DEMO[end].phone, "123456", end);
@@ -751,6 +893,8 @@ async function switchEnd(end){
   const saved = JSON.parse(localStorage.getItem("ec_user")||"null");
   state.loginEnd = saved?.end || "elder";
   state.end = state.loginEnd;
+  updateClock();
+  setInterval(updateClock, 1000);
   render();
 })();
 </script>

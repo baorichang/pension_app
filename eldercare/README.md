@@ -112,7 +112,8 @@ eldercare/
     ├── test_stage9_server_time.py      # 问题 3：操作时间取服务端系统时间
     ├── test_stage10_login_ui.py       # 问题 4：登录界面要素与链路
     ├── test_stage11_prototype.py      # 问题 5：导航/分类/入口对齐原型
-    └── test_stage12_badge.py          # 问题 6：未读消息/告警角标计数
+    ├── test_stage12_badge.py          # 问题 6：未读消息/告警角标计数
+    └── test_stage13_ui_polish.py       # 界面细化：下拉/状态中文/状态栏/AI 助手
 ```
 
 ## 四、已实现模块（对应开发计划阶段）
@@ -161,7 +162,7 @@ eldercare/
 
 ## 八、测试结果
 
-当前全量 **83 个用例全部通过**（阶段 0–6 一致性专项 + 问题 1–6 专项）。运行：
+当前全量 **88 个用例全部通过**（阶段 0–6 一致性专项 + 问题 1–6 专项 + 界面细化专项）。运行：
 
 ```bash
 python -m pytest -v
