@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>养老 App 低保真线框原型</title>
+<style>
+  /* ============ 基础与线框风格 ============ */
+  :root{
+    --ink:#222; --line:#999; --soft:#ddd; --bg:#f0f0f0; --card:#fff;
+    --note:#888; --warn:#b33;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    background:#e8e8e8; color:var(--ink); min-height:100vh;
+  }
+  /* ============ 顶部工具条 ============ */
+  .toolbar{
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    padding:14px 24px; background:#fff; border-bottom:1px solid var(--line);
+  }
+  .toolbar h1{font-size:16px; font-weight:700;}
+  .toolbar .meta{font-size:12px; color:var(--note);}
+  .seg{display:flex; border:1px solid var(--ink); border-radius:8px; overflow:hidden;}
+  .seg button{
+    border:none; background:#fff; padding:8px 18px; font-size:14px; cursor:pointer;
+    border-right:1px solid var(--ink);
+  }
+  .seg button:last-child{border-right:none;}
+  .seg button.active{background:var(--ink); color:#fff;}
+  .toolbar select{
+    padding:7px 10px; border:1px solid var(--ink); border-radius:8px; font-size:13px; background:#fff;
+  }
+  .legend{margin-left:auto; font-size:12px; color:var(--note);}
+
+  /* ============ 舞台与手机样机 ============ */
+  .stage{display:flex; justify-content:center; padding:30px 16px; gap:30px; align-items:flex-start;}
+  .phone{
+    width:390px; height:780px; background:var(--card); border:3px solid var(--ink);
+    border-radius:38px; overflow:hidden; display:flex; flex-direction:column;
+    box-shadow:0 10px 30px rgba(0,0,0,.18);
+  }
+  .statusbar{
+    height:30px; display:flex; justify-content:space-between; align-items:center;
+    padding:0 22px; font-size:12px; color:var(--ink); border-bottom:1px dashed var(--line);
+  }
+  .appbar{
+    height:48px; display:flex; align-items:center; gap:10px; padding:0 16px;
+    border-bottom:1px solid var(--line); background:#fafafa;
+  }
+  .appbar .back{font-size:18px; cursor:pointer; width:24px;}
+  .appbar .title{font-size:16px; font-weight:700;}
+  .appbar .right{margin-left:auto; font-size:12px; color:var(--note);}
+  .screen{flex:1; overflow-y:auto; background:var(--bg); padding:14px;}
+  .screen::-webkit-scrollbar{width:6px;}
+  .screen::-webkit-scrollbar-thumb{background:var(--soft);}
+
+  /* ============ 通用线框组件 ============ */
+  .card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px;}
+  .card h3{font-size:14px; margin-bottom:8px;}
+  .ph{
+    background:var(--soft); border:1px dashed var(--line); border-radius:8px;
+    display:flex; align-items:center; justify-content:center; color:var(--note); font-size:12px;
+  }
+  .ph-img{height:110px;}
+  .ph-line{height:12px; background:var(--soft); border-radius:4px; margin:6px 0;}
+  .ph-line.short{width:60%;}
+  .note{font-size:11px; color:var(--note);}
+  .row{display:flex; align-items:center; gap:10px;}
+  .row.between{justify-content:space-between;}
+  .btn{
+    display:block; width:100%; padding:13px; border:1.5px solid var(--ink); border-radius:10px;
+    background:#fff; font-size:15px; cursor:pointer; text-align:center; color:var(--ink);
+  }
+  .btn.primary{background:var(--ink); color:#fff;}
+  .btn.sm{width:auto; padding:7px 14px; font-size:13px;}
+  .link{color:var(--ink); text-decoration:underline; font-size:13px; cursor:pointer; text-align:center; display:block; margin-top:10px;}
+  .tag{display:inline-block; border:1px solid var(--line); border-radius:6px; padding:2px 8px; font-size:11px; color:var(--note);}
+  .tag.red{border-color:var(--warn); color:var(--warn);}
+  .tag.gray{background:#f2f2f2;}
+  .field{margin-bottom:12px;}
+  .field label{font-size:12px; color:var(--note); display:block; margin-bottom:5px;}
+  .field .input{height:38px; border:1px solid var(--line); border-radius:8px; background:#fafafa; display:flex; align-items:center; padding:0 12px; font-size:13px; color:var(--note);}
+  .switch{width:44px; height:24px; border:1.5px solid var(--ink); border-radius:12px; position:relative;}
+  .switch::after{content:""; position:absolute; top:2px; left:2px; width:17px; height:17px; background:var(--ink); border-radius:50%;}
+  .switch.on::after{left:23px; background:#fff;}
+
+  /* 九宫格 */
+  .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:12px;}
+  .grid .item{display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer;}
+  .grid .icon{width:52px; height:52px; border:1.5px solid var(--ink); border-radius:14px; background:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--note);}
+  .grid .item span{font-size:11px;}
+
+  /* 列表卡片 */
+  .list-card{display:flex; gap:12px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:12px; cursor:pointer;}
+  .list-card .ph{width:72px; height:72px; flex-shrink:0;}
+  .list-card .info{flex:1; min-width:0;}
+  .list-card .info .t{font-size:14px; font-weight:600; margin-bottom:5px;}
+  .list-card .info .d{font-size:12px; color:var(--note);}
+  .arrow{color:var(--line); font-size:16px;}
+
+  /* 底部 Tab */
+  .tabbar{height:64px; border-top:1px solid var(--line); background:#fff; display:flex; align-items:center; position:relative;}
+  .tabbar .tab{flex:1; text-align:center; font-size:11px; color:var(--note); cursor:pointer;}
+  .tabbar .tab .ti{font-size:18px; display:block; margin-bottom:3px;}
+  .tabbar .tab.active{color:var(--ink); font-weight:700;}
+  .tabbar .center{flex:1; display:flex; justify-content:center;}
+  .sos-btn{
+    width:58px; height:58px; border:2px solid var(--warn); color:var(--warn); border-radius:50%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11px; font-weight:700;
+    margin-top:-22px; background:#fff; cursor:pointer;
+  }
+
+  /* SOS 大圆 */
+  .sos-ring{width:200px; height:200px; border:3px solid var(--warn); border-radius:50%; margin:26px auto; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--warn); font-weight:700; cursor:pointer; background:#fff;}
+  .sos-ring .big{font-size:22px;}
+
+  /* 时间线 */
+  .timeline{position:relative; padding-left:20px;}
+  .timeline::before{content:""; position:absolute; left:6px; top:4px; bottom:4px; width:1px; background:var(--line);}
+  .tl-item{position:relative; margin-bottom:16px;}
+  .tl-item::before{content:""; position:absolute; left:-18px; top:5px; width:10px; height:10px; border:1.5px solid var(--ink); border-radius:50%; background:#fff;}
+
+  /* 侧栏目录 */
+  .side{width:250px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px; max-height:780px; overflow-y:auto;}
+  .side h4{font-size:13px; margin:10px 0 6px;}
+  .side h4:first-child{margin-top:0;}
+  .side a{display:block; font-size:12px; color:var(--ink); text-decoration:none; padding:5px 8px; border-radius:6px; cursor:pointer;}
+  .side a:hover{background:#f2f2f2;}
+  .side a.cur{background:var(--ink); color:#fff;}
+  @media (max-width:900px){ .side{display:none;} }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>养老 App · 低保真线框原型</h1>
+  <span class="meta">综合平台 / 老人端 + 子女端 · 仅页面示意，非工程代码</span>
+  <div class="seg" id="endSeg">
+    <button data-end="elder" class="active">老人端</button>
+    <button data-end="child">子女端</button>
+  </div>
+  <select id="pageSelect"></select>
+  <span class="legend">灰色块 / 虚线 = 占位元素</span>
+</div>
+
+<div class="stage">
+  <aside class="side" id="sideNav"></aside>
+
+  <div class="phone">
+    <div class="statusbar">
+      <span>9:30</span>
+      <span>信号 · Wi-Fi · 电量 占位</span>
+    </div>
+    <div class="appbar">
+      <span class="back" id="backBtn" style="visibility:hidden;">‹</span>
+      <span class="title" id="appTitle"></span>
+      <span class="right" id="appRight"></span>
+    </div>
+    <div class="screen" id="screen"></div>
+    <div class="tabbar" id="tabbar"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+ * 路由与视图配置
+ * ============================================================ */
+const ELDER_HOME = '#/e/home';
+const CHILD_HOME = '#/c/home';
+
+// 视图元数据：标题、所属端、底部 Tab 激活项、渲染函数
+const VIEWS = {
+  /* ---------------- 老人端 ---------------- */
+  'e-login':{end:'elder', title:'登录 / 绑定', tab:null, render:loginElder},
+  'e-home':{end:'elder', title:'首页', tab:'home', render:viewElderHome},
+  'e-services':{end:'elder', title:'养老服务', tab:'services', render:viewServices},
+  'e-detail':{end:'elder', title:'服务详情', tab:'services', render:viewElderDetail},
+  'e-order':{end:'elder', title:'确认订单', tab:'services', render:viewElderOrder},
+  'e-health':{end:'elder', title:'健康管理', tab:'health', render:viewElderHealth},
+  'e-vitals':{end:'elder', title:'体征录入', tab:'health', render:viewVitals},
+  'e-meds':{end:'elder', title:'用药提醒', tab:'health', render:viewMeds},
+  'e-sos':{end:'elder', title:'紧急求助', tab:'sos', render:viewSos},
+  'e-messages':{end:'elder', title:'消息', tab:'home', render:viewMessages},
+  'e-mine':{end:'elder', title:'我的', tab:'mine', render:viewElderMine},
+  'e-settings':{end:'elder', title:'适老化设置', tab:'mine', render:viewSettings},
+  'e-orders':{end:'elder', title:'我的订单', tab:'mine', render:viewOrdersElder},
+
+  /* ---------------- 子女端 ---------------- */
+  'c-login':{end:'child', title:'家属端登录', tab:null, render:loginChild},
+  'c-home':{end:'child', title:'父母概览', tab:'home', render:viewChildHome},
+  'c-detail':{end:'child', title:'老人详情', tab:'home', render:viewChildDetail},
+  'c-alert':{end:'child', title:'告警动态', tab:'alert', render:viewAlert},
+  'c-order':{end:'child', title:'代办下单', tab:'order', render:viewChildOrder},
+  'c-browse':{end:'child', title:'资源浏览', tab:'order', render:viewBrowse},
+  'c-orders':{end:'child', title:'代付订单', tab:'mine', render:viewOrdersChild},
+  'c-mine':{end:'child', title:'我的', tab:'mine', render:viewChildMine},
+};
+
+// 侧边目录分组
+const SIDE_GROUPS = {
+  elder:[
+    ['e-login','登录 / 绑定'], ['e-home','首页（工作台）'], ['e-services','服务（居家/社区/机构）'],
+    ['e-detail','服务详情'], ['e-order','确认订单'], ['e-health','健康管理'], ['e-vitals','体征录入'],
+    ['e-meds','用药提醒'], ['e-sos','一键求助 SOS'], ['e-messages','消息'], ['e-mine','我的'],
+    ['e-settings','适老化设置'], ['e-orders','订单中心']
+  ],
+  child:[
+    ['c-login','登录 / 绑定'], ['c-home','父母概览'], ['c-detail','老人详情'], ['c-alert','告警动态'],
+    ['c-order','代办下单'], ['c-browse','资源浏览'], ['c-orders','代付订单'], ['c-mine','我的']
+  ]
+};
+
+const ELDER_TABS = [
+  {key:'home', label:'首页', icon:'▦', go:'#/e/home'},
+  {key:'services', label:'服务', icon:'🛎', go:'#/e/services'},
+  {key:'sos', center:true, label:'SOS', go:'#/e/sos'},
+  {key:'health', label:'健康', icon:'✚', go:'#/e/health'},
+  {key:'mine', label:'我的', icon:'◉', go:'#/e/mine'},
+];
+const CHILD_TABS = [
+  {key:'home', label:'父母', icon:'▦', go:'#/c/home'},
+  {key:'alert', label:'告警', icon:'⚠', go:'#/c-alert'},
+  {key:'order', label:'代办', icon:'🛒', go:'#/c-order'},
+  {key:'mine', label:'我的', icon:'◉', go:'#/c-mine'},
+];
+
+/* ============================================================
+ * 小部件模板
+ * ============================================================ */
+function ph(h){ return `<div class="ph" style="height:${h||60}px;">占位图 / 占位块</div>`; }
+function listCard(title, desc, go, imgText){
+  return `<div class="list-card" data-go="${go}">
+    <div class="ph">${imgText||'图'}</div>
+    <div class="info">
+      <div class="t">${title}</div>
+      <div class="d">${desc}</div>
+    </div>
+    <span class="arrow">›</span>
+  </div>`;
+}
+
+/* ============================================================
+ * 老人端视图
+ * ============================================================ */
+function loginElder(){
+  return `
+    <div style="text-align:center; margin-top:30px;">
+      <div class="ph" style="width:90px;height:90px;border-radius:24px;margin:0 auto 18px;">Logo</div>
+      <h2 style="font-size:20px;margin-bottom:6px;">养老服务 App</h2>
+      <p class="note">安心居家 · 就近照护</p>
+    </div>
+    <div style="margin-top:34px;">
+      <button class="btn primary" data-go="#/e/home">手机号登录</button>
+      <span class="link" data-go="#/c-login">让子女帮我注册 / 绑定</span>
+    </div>
+    <div class="card" style="margin-top:30px;">
+      <label class="row" style="gap:8px;font-size:12px;"><span class="switch"></span> 同意隐私政策与用户协议</label>
+      <p class="note" style="margin-top:8px;">定位、健康等信息需本人授权后使用（占位说明）</p>
+    </div>`;
+}
+
+function viewElderHome(){
+  return `
+    <div class="row between" style="margin-bottom:12px;">
+      <div>
+        <div style="font-size:18px;font-weight:700;">您好，王阿姨</div>
+        <div class="note">今天 11 月 24日 周二 · 天气占位</div>
+      </div>
+      <span class="tag gray">在线</span>
+    </div>
+
+    <div class="card" style="border-style:dashed;">
+      <div class="row between">
+        <strong style="font-size:13px;">今日待办</strong>
+        <span class="tag red">3 项</span>
+      </div>
+      <div class="ph-line" style="margin-top:10px;">08:00 服药 · 降压药</div>
+      <div class="ph-line">10:00 预约上门助洁</div>
+      <div class="ph-line short">15:00 社区书法课</div>
+    </div>
+
+    <div class="card">
+      <div class="grid">
+        <div class="item" data-go="#/e-services"><div class="icon">服务</div><span>上门服务</span></div>
+        <div class="item" data-go="#/e-health"><div class="icon">健康</div><span>健康记录</span></div>
+        <div class="item" data-go="#/e-sos"><div class="icon">位置</div><span>我的位置</span></div>
+        <div class="item" data-go="#/c-home"><div class="icon">视频</div><span>视频子女</span></div>
+        <div class="item" data-go="#/e-services"><div class="icon">活动</div><span>社区活动</span></div>
+        <div class="item" data-go="#/e-services"><div class="icon">机构</div><span>找养老院</span></div>
+        <div class="item" data-go="#/e-messages"><div class="icon">消息</div><span>消息</span></div>
+        <div class="item" data-go="#/e-sos"><div class="icon">求助</div><span>一键求助</span></div>
+      </div>
+    </div>
+
+    <button class="btn" style="border-color:var(--warn);color:var(--warn);" data-go="#/e-sos">紧急求助</button>`;
+}
+
+function viewServices(){
+  return `
+    <div class="seg" style="margin-bottom:14px;">
+      <button class="active">居家上门</button><button>社区服务</button><button>养老机构</button>
+    </div>
+    ${listCard('助浴服务','上门洗浴 · 45 分钟 · 价格占位','#/e-detail?type=home','浴')}
+    ${listCard('居家助洁','日常保洁 · 2 小时 · 价格占位','#/e-detail?type=home','洁')}
+    ${listCard('陪同就诊','专人陪诊 · 含挂号取药','#/e-detail?type=home','诊')}
+    ${listCard('专业护理','伤口/康复护理 · 持证护工','#/e-detail?type=home','护')}
+    <p class="note" style="text-align:center;">切换顶部标签可查看社区活动与养老机构列表（占位）</p>`;
+}
+
+function viewElderDetail(){
+  const type = query().type || 'home';
+  const map = {
+    home:{t:'助浴服务', d:'服务说明、包含项目、注意事项等占位文本，服务人员资质与历史评价占位。'},
+    community:{t:'社区书法课', d:'活动地点、时间、剩余名额、适合人群等占位信息。'},
+    org:{t:'康乐养老院', d:'环境图文、床位类型、费用区间、收住条件等占位信息。'}
+  };
+  const m = map[type] || map.home;
+  return `
+    <div class="ph ph-img" style="margin-bottom:12px;">环境 / 服务图片占位</div>
+    <div class="card">
+      <div class="row between"><strong style="font-size:16px;">${m.t}</strong><span class="tag">评分占位</span></div>
+      <div class="ph-line" style="margin-top:10px;"></div>
+      <div class="ph-line short"></div>
+      <p class="note" style="margin-top:8px;">${m.d}</p>
+    </div>
+    <div class="card">
+      <div class="field"><label>选择时间</label><div class="input">日期 / 时段占位 ›</div></div>
+      <div class="field"><label>服务人员</label><div class="input">可选护工列表占位 ›</div></div>
+    </div>
+    <div class="card">
+      <h3>用户评价</h3>
+      <div class="ph-line"></div><div class="ph-line short"></div>
+    </div>
+    <button class="btn primary" data-go="#/e-order">立即预约</button>`;
+}
+
+function viewElderOrder(){
+  return `
+    <div class="card">
+      <div class="row between"><span class="note">服务项目</span><strong>助浴服务</strong></div>
+      <div class="row between" style="margin-top:10px;"><span class="note">预约时间</span><span>11月25日 10:00</span></div>
+      <div class="row between" style="margin-top:10px;"><span class="note">服务地址</span><span>家庭住址占位</span></div>
+      <div class="row between" style="margin-top:10px;"><span class="note">金额</span><strong>¥ 占位</strong></div>
+    </div>
+    <div class="card">
+      <h3>支付方式</h3>
+      <label class="row" style="gap:8px;margin-top:8px;"><span class="switch on"></span> 本人支付</label>
+      <label class="row" style="gap:8px;margin-top:10px;"><span class="switch"></span> 子女远程代付</label>
+    </div>
+    <button class="btn primary" data-go="#/e-orders">确认下单</button>`;
+}
+
+function viewElderHealth(){
+  return `
+    <div class="card">
+      <div class="row between"><h3 style="margin:0;">体征记录</h3><span class="tag gray" data-go="#/e-vitals">录入 ›</span></div>
+      <div class="grid" style="margin-top:12px;">
+        <div class="item"><div class="icon">血压</div><span>--/--</span></div>
+        <div class="item"><div class="icon">血糖</div><span>--</span></div>
+        <div class="item"><div class="icon">心率</div><span>--</span></div>
+        <div class="item"><div class="icon">体重</div><span>--</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row between"><h3 style="margin:0;">用药提醒</h3><span class="link" style="margin:0;" data-go="#/e-meds">管理 ›</span></div>
+      <div class="ph-line" style="margin-top:10px;">降压药 · 08:00 <span class="tag gray">未服</span></div>
+      <div class="ph-line">钙片 · 12:00 <span class="tag gray">已服</span></div>
+    </div>
+    <div class="card">
+      <div class="list-card" style="margin-bottom:8px;" data-go="#/e-health"><div class="info"><div class="t">健康档案</div><div class="d">病史 / 慢病 / 过敏史</div></div><span class="arrow">›</span></div>
+      <div class="list-card" style="margin-bottom:0;" data-go="#/e-health"><div class="info"><div class="t">在线问诊 / 挂号 / 陪诊</div><div class="d">入口占位</div></div><span class="arrow">›</span></div>
+    </div>`;
+}
+
+function viewVitals(){
+  return `
+    <div class="card">
+      <div class="field"><label>血压（mmHg）</label><div class="input">收缩压 / 舒张压</div></div>
+      <div class="field"><label>血糖（mmol/L）</label><div class="input">空腹 / 餐后</div></div>
+      <div class="field"><label>心率（次/分）</label><div class="input">数值占位</div></div>
+      <div class="field"><label>体重（kg）</label><div class="input">数值占位</div></div>
+    </div>
+    <button class="btn" style="margin-bottom:12px;">接入智能设备（手环 / 血压计）</button>
+    <div class="card"><h3>历史记录</h3><div class="ph-line"></div><div class="ph-line short"></div></div>
+    <button class="btn primary" data-go="#/e-health">保存</button>`;
+}
+
+function viewMeds(){
+  return `
+    <div class="card">
+      <div class="row between"><strong>降压药</strong><span class="tag gray">未服</span></div>
+      <div class="note" style="margin-top:6px;">1 片 · 每日 08:00</div>
+    </div>
+    <div class="card">
+      <div class="row between"><strong>钙片</strong><span class="tag">已服</span></div>
+      <div class="note" style="margin-top:6px;">2 片 · 每日 12:00</div>
+    </div>
+    <button class="btn">添加用药</button>`;
+}
+
+function viewSos(){
+  return `
+    <div class="sos-ring" data-go="#/e-messages">
+      <span class="big">一键求助</span>
+      <span style="font-size:12px;margin-top:6px;">长按 / 点击发起</span>
+    </div>
+    <div class="card">
+      <div class="row between"><strong>当前定位</strong><span class="note">地图占位 · 可刷新</span></div>
+      <div class="ph-line" style="margin-top:10px;">地址占位</div>
+    </div>
+    <div class="card">
+      <h3>紧急联系人</h3>
+      <div class="list-card" style="margin-bottom:8px;"><div class="info"><div class="t">子女（大女儿）</div><div class="d">电话占位 · 一键拨打</div></div><span class="arrow">☎</span></div>
+      <div class="list-card" style="margin-bottom:8px;"><div class="info"><div class="t">子女（儿子）</div><div class="d">电话占位</div></div><span class="arrow">☎</span></div>
+      <div class="list-card" style="margin-bottom:0;"><div class="info"><div class="t">社区 / 物业</div><div class="d">电话占位</div></div><span class="arrow">☎</span></div>
+    </div>
+    <div class="card">
+      <div class="row between" style="margin-bottom:10px;"><span>跌倒检测</span><span class="switch on"></span></div>
+      <div class="row between" style="margin-bottom:10px;"><span>防走失围栏</span><span class="switch on"></span></div>
+      <div class="row between"><span>长时间无活动提醒</span><span class="switch"></span></div>
+    </div>`;
+}
+
+function viewMessages(){
+  return `
+    <div class="seg" style="margin-bottom:14px;"><button class="active">通知</button><button>子女留言</button></div>
+    <div class="card"><div class="row between"><strong>服务通知</strong><span class="note">时间占位</span></div><div class="ph-line short" style="margin-top:8px;"></div></div>
+    <div class="card"><div class="row between"><strong>服药提醒</strong><span class="note">时间占位</span></div><div class="ph-line short" style="margin-top:8px;"></div></div>
+    <div class="card"><div class="row between"><strong>平台公告</strong><span class="note">时间占位</span></div><div class="ph-line short" style="margin-top:8px;"></div></div>`;
+}
+
+function viewElderMine(){
+  return `
+    <div class="card row" style="gap:14px;">
+      <div class="ph" style="width:64px;height:64px;border-radius:50%;">头像</div>
+      <div><strong>王阿姨</strong><div class="note">68 岁 · 已绑定 2 位家属</div></div>
+    </div>
+    <div class="card" style="padding:0;">
+      <div class="list-card" style="border:none;border-bottom:1px solid var(--line);border-radius:0;" data-go="#/e-mine"><div class="info"><div class="t">个人档案</div><div class="d">病史 / 慢病 / 过敏史</div></div><span class="arrow">›</span></div>
+      <div class="list-card" style="border:none;border-bottom:1px solid var(--line);border-radius:0;" data-go="#/c-home"><div class="info"><div class="t">亲属绑定管理</div></div><span class="arrow">›</span></div>
+      <div class="list-card" style="border:none;border-bottom:1px solid var(--line);border-radius:0;" data-go="#/e-settings"><div class="info"><div class="t">适老化设置</div></div><span class="arrow">›</span></div>
+      <div class="list-card" style="border:none;border-bottom:1px solid var(--line);border-radius:0;" data-go="#/e-mine"><div class="info"><div class="t">隐私与授权</div></div><span class="arrow">›</span></div>
+      <div class="list-card" style="border:none;border-bottom:1px solid var(--line);border-radius:0;" data-go="#/e-orders"><div class="info"><div class="t">我的订单</div></div><span class="arrow">›</span></div>
+      <div class="list-card" style="border:none;border-radius:0;" data-go="#/e-mine"><div class="info"><div class="t">在线客服 · 防骗中心</div></div><span class="arrow">›</span></div>
+    </div>`;
+}
+
+function viewSettings(){
+  return `
+    <div class="card">
+      <div class="row between" style="margin-bottom:10px;"><span>字体大小</span><span class="tag">大</span></div>
+      <div class="ph" style="height:30px;">字号调节占位</div>
+    </div>
+    <div class="card">
+      <div class="row between" style="margin-bottom:10px;"><span>语音播报</span><span class="switch on"></span></div>
+      <div class="row between"><span>高对比度模式</span><span class="switch"></span></div>
+    </div>
+    <div class="card"><h3>效果预览</h3><div class="ph-line"></div><div class="ph-line short"></div></div>`;
+}
+
+function orderCards(){
+  return `
+    <div class="card">
+      <div class="row between"><strong>助浴服务</strong><span class="tag gray">进行中</span></div>
+      <div class="note" style="margin-top:6px;">时间占位 · 金额占位</div>
+    </div>
+    <div class="card">
+      <div class="row between"><strong>居家助洁</strong><span class="tag">已完成</span></div>
+      <div class="note" style="margin-top:6px;">时间占位 · 可评价</div>
+    </div>`;
+}
+function viewOrdersElder(){
+  return `<div class="seg" style="margin-bottom:14px;"><button class="active">全部</button><button>待付款</button><button>进行中</button><button>已完成</button></div>${orderCards()}`;
+}
+
+/* ============================================================
+ * 子女端视图
+ * ============================================================ */
+function loginChild(){
+  return `
+    <div style="text-align:center;margin-top:30px;">
+      <div class="ph" style="width:90px;height:90px;border-radius:24px;margin:0 auto 18px;">Logo</div>
+      <h2 style="font-size:20px;margin-bottom:6px;">家属端</h2>
+      <p class="note">远程照看父母 · 代办服务</p>
+    </div>
+    <div style="margin-top:34px;">
+      <button class="btn primary" data-go="#/c-home">手机号登录</button>
+      <span class="link">绑定老人（验证码 / 扫码）</span>
+    </div>`;
+}
+
+function viewChildHome(){
+  return `
+    <div class="card row" style="gap:12px;">
+      <div class="ph" style="width:56px;height:56px;border-radius:50%;">母</div>
+      <div style="flex:1;">
+        <div class="row between"><strong>王阿姨 · 68 岁</strong><span class="tag gray">在家</span></div>
+        <div class="note" style="margin-top:4px;">血压正常 · 位置：家中占位</div>
+      </div>
+    </div>
+    <div class="card row" style="gap:12px;">
+      <div class="ph" style="width:56px;height:56px;border-radius:50%;">父</div>
+      <div style="flex:1;">
+        <div class="row between"><strong>李伯伯 · 71 岁</strong><span class="tag red">体征异常</span></div>
+        <div class="note" style="margin-top:4px;">血糖偏高 · 位置：社区占位</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="grid">
+        <div class="item" data-go="#/c-detail"><div class="icon">详情</div><span>查看详情</span></div>
+        <div class="item" data-go="#/c-alert"><div class="icon">告警</div><span>告警动态</span></div>
+        <div class="item" data-go="#/c-order"><div class="icon">代办</div><span>代下单</span></div>
+        <div class="item" data-go="#/c-browse"><div class="icon">资源</div><span>找服务</span></div>
+      </div>
+    </div>`;
+}
+
+function viewChildDetail(){
+  return `
+    <div class="card row" style="gap:14px;">
+      <div class="ph" style="width:60px;height:60px;border-radius:50%;">母</div>
+      <div><strong>王阿姨</strong><div class="note">68 岁 · 慢病 / 过敏史占位</div></div>
+    </div>
+    <div class="card"><h3>健康数据曲线</h3><div class="ph" style="height:120px;">血压 / 血糖趋势图占位</div></div>
+    <div class="card"><h3>位置轨迹</h3><div class="ph" style="height:90px;">地图轨迹占位</div></div>
+    <div class="card"><h3>历史服务记录</h3><div class="ph-line"></div><div class="ph-line short"></div></div>`;
+}
+
+function viewAlert(){
+  return `
+    <div class="timeline">
+      <div class="tl-item">
+        <span class="tag red">体征异常</span>
+        <div class="note" style="margin:4px 0;">李伯伯 · 血糖偏高 · 时间占位</div>
+        <div class="note">定位占位 · <span class="link" style="display:inline;margin:0;">联系老人</span></div>
+      </div>
+      <div class="tl-item">
+        <span class="tag">漏服药</span>
+        <div class="note" style="margin:4px 0;">王阿姨 · 08:00 降压药未服</div>
+      </div>
+      <div class="tl-item">
+        <span class="tag red">SOS 求助</span>
+        <div class="note" style="margin:4px 0;">时间占位 · 定位占位 · 已处理</div>
+      </div>
+      <div class="tl-item">
+        <span class="tag">离开围栏</span>
+        <div class="note" style="margin:4px 0;">超出安全区域 · 时间占位</div>
+      </div>
+      <div class="tl-item">
+        <span class="tag gray">长时间无活动</span>
+        <div class="note" style="margin:4px 0;">超过设定时长未检测到活动</div>
+      </div>
+    </div>`;
+}
+
+function viewChildOrder(){
+  return `
+    <div class="card">
+      <div class="field"><label>为哪位老人下单</label><div class="input">王阿姨 ›</div></div>
+      <div class="field"><label>服务分类</label><div class="input">居家上门 / 社区 / 机构 ›</div></div>
+      <div class="field"><label>时间与地址</label><div class="input">时间 · 地址占位</div></div>
+      <div class="row between"><span class="note">应付金额</span><strong>¥ 占位</strong></div>
+    </div>
+    <div class="card">
+      <label class="row" style="gap:8px;"><span class="switch on"></span> 子女代付</label>
+    </div>
+    <button class="btn primary" data-go="#/c-orders">确认代付下单</button>`;
+}
+
+function viewBrowse(){
+  return `
+    <div class="seg" style="margin-bottom:14px;"><button class="active">全部</button><button>居家</button><button>社区</button><button>机构</button></div>
+    ${listCard('康乐养老院','床位 / 费用 / 环境占位','#/c-order','院')}
+    ${listCard('健康讲座','社区活动室 · 本周六','#/c-order','课')}
+    ${listCard('上门护理','持证护工 · 可预约','#/c-order','护')}`;
+}
+
+function viewOrdersChild(){
+  return `
+    <div class="seg" style="margin-bottom:14px;"><button class="active">全部</button><button>进行中</button><button>已完成</button></div>
+    <div class="card">
+      <div class="row between"><strong>陪诊服务（代王阿姨）</strong><span class="tag gray">进行中</span></div>
+      <div class="note" style="margin-top:6px;">时间占位 · 金额占位</div>
+    </div>
+    <div class="card">
+      <div class="row between"><strong>居家助洁（代李伯伯）</strong><span class="tag">已完成</span></div>
+      <div class="note" style="margin-top:6px;">时间占位 · 可查看服务记录</div>
+    </div>`;
+}
+
+function viewChildMine(){
+  return `
+    <div class="card row" style="gap:14px;">
+      <div class="ph" style="width:60px;height:60px;border-radius:50%;">我</div>
+      <div><strong>家属账号</strong><div class="note">已绑定 2 位老人</div></div>
+    </div>
+    <div class="card" style="padding:0;">
+      <div class="list-card" style="border:none;border-bottom:1px solid var(--line);border-radius:0;"><div class="info"><div class="t">老人绑定管理</div></div><span class="arrow">›</span></div>
+      <div class="list-card" style="border:none;border-bottom:1px solid var(--line);border-radius:0;"><div class="info"><div class="t">成员查看权限</div></div><span class="arrow">›</span></div>
+      <div class="list-card" style="border:none;border-bottom:1px solid var(--line);border-radius:0;"><div class="info"><div class="t">消息与告警设置</div></div><span class="arrow">›</span></div>
+      <div class="list-card" style="border:none;border-bottom:1px solid var(--line);border-radius:0;"><div class="info"><div class="t">支付方式</div></div><span class="arrow">›</span></div>
+      <div class="list-card" style="border:none;border-radius:0;"><div class="info"><div class="t">在线客服</div></div><span class="arrow">›</span></div>
+    </div>`;
+}
+
+/* ============================================================
+ * 路由渲染
+ * ============================================================ */
+function parseHash(){
+  const h = location.hash.replace(/^#\//,'') || 'e/home';
+  const [path, qs] = h.split('?');
+  const view = VIEWS[path] ? path : 'e-home';
+  const query = {};
+  if(qs) qs.split('&').forEach(kv=>{ const [k,v]=kv.split('='); query[k]=v; });
+  return {view, query};
+}
+function query(){ return parseHash().query; }
+
+function currentEnd(){ return VIEWS[parseHash().view].end; }
+
+function renderTabbar(end, active){
+  const tabs = end === 'elder' ? ELDER_TABS : CHILD_TABS;
+  const bar = document.getElementById('tabbar');
+  bar.innerHTML = tabs.map(t=>{
+    if(t.center){
+      return `<div class="center"><div class="sos-btn" data-go="${t.go}"><span style="font-size:16px;">!</span>SOS</div></div>`;
+    }
+    return `<div class="tab ${active===t.key?'active':''}" data-go="${t.go}">
+      <span class="ti">${t.icon}</span>${t.label}</div>`;
+  }).join('');
+}
+
+function renderSide(end, cur){
+  const side = document.getElementById('sideNav');
+  side.innerHTML = SIDE_GROUPS[end].map(([k,label])=>
+    `<a data-go="#/${k}" class="${k===cur?'cur':''}">${label}</a>`).join('');
+}
+
+function renderSelect(end){
+  const sel = document.getElementById('pageSelect');
+  sel.innerHTML = SIDE_GROUPS[end].map(([k,label])=>`<option value="#/${k}">${label}</option>`).join('');
+  sel.value = '#/' + parseHash().view;
+}
+
+function render(){
+  const {view} = parseHash();
+  const cfg = VIEWS[view];
+  document.getElementById('appTitle').textContent = cfg.title;
+  document.getElementById('screen').innerHTML = cfg.render();
+  renderTabbar(cfg.end, cfg.tab);
+  renderSide(cfg.end, view);
+  renderSelect(cfg.end);
+
+  // 返回按钮：非首页 / 登录页显示
+  const homeHash = cfg.end === 'elder' ? ELDER_HOME : CHILD_HOME;
+  document.getElementById('backBtn').style.visibility = (cfg.tab===null || view.endsWith('home')) ? 'hidden':'visible';
+  document.getElementById('backBtn').onclick = ()=> location.hash = homeHash;
+
+  // 端切换高亮
+  document.querySelectorAll('#endSeg button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.end===cfg.end);
+  });
+}
+
+// 事件委托：data-go 跳转
+document.addEventListener('click', e=>{
+  const go = e.target.closest('[data-go]');
+  if(go){ location.hash = go.dataset.go; }
+});
+document.getElementById('backBtn').addEventListener('click', ()=>{});
+
+// 端切换
+document.getElementById('endSeg').addEventListener('click', e=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  location.hash = btn.dataset.end === 'elder' ? ELDER_HOME : CHILD_HOME;
+});
+// 下拉跳转
+document.getElementById('pageSelect').addEventListener('change', e=>{ location.hash = e.target.value; });
+
+window.addEventListener('hashchange', render);
+if(!location.hash) location.hash = ELDER_HOME;
+render();
+</script>
+</body>
+</html>

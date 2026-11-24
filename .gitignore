@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Test / cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local database (rebuilt on first startup)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# OS / editor
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/

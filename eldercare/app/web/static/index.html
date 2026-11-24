@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>养老 App 演示（浏览器版）</title>
+<style>
+  :root{--ink:#1f2933;--line:#c4ccd4;--soft:#eef1f4;--bg:#e7eaee;--card:#fff;--muted:#7a8794;--primary:#2b5876;--warn:#b33;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:var(--bg);color:var(--ink);}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .topbar h1{font-size:16px;}
+  .seg{display:flex;border:1px solid var(--ink);border-radius:10px;overflow:hidden;}
+  .seg button{border:none;background:#fff;padding:8px 18px;font-size:14px;cursor:pointer;border-right:1px solid var(--ink);}
+  .seg button:last-child{border-right:none;}
+  .seg button.active{background:var(--ink);color:#fff;}
+  .who{font-size:13px;color:var(--muted);margin-left:auto;}
+  .stage{display:flex;justify-content:center;padding:26px 16px;}
+  .phone{width:390px;max-width:100%;height:780px;background:var(--card);border:3px solid var(--ink);border-radius:36px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px rgba(0,0,0,.18);}
+  .status{height:28px;display:flex;justify-content:space-between;align-items:center;padding:0 20px;font-size:12px;border-bottom:1px dashed var(--line);}
+  .appbar{height:50px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--line);background:#fafbfc;}
+  .appbar .title{font-size:17px;font-weight:700;}
+  .appbar .back{cursor:pointer;font-size:18px;margin-right:10px;visibility:hidden;}
+  .screen{flex:1;overflow-y:auto;padding:14px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;}
+  .card h3{font-size:15px;margin-bottom:10px;}
+  .row{display:flex;align-items:center;gap:10px;}
+  .between{justify-content:space-between;}
+  .muted{color:var(--muted);font-size:12px;}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .gitem{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;}
+  .gitem .ic{width:54px;height:54px;border:1.5px solid var(--ink);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);}
+  .gitem span{font-size:11px;}
+  .btn{display:block;width:100%;padding:13px;border:1.5px solid var(--ink);border-radius:10px;background:#fff;font-size:15px;cursor:pointer;text-align:center;}
+  .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .btn.warn{border-color:var(--warn);color:var(--warn);}
+  .btn.sm{width:auto;padding:7px 12px;font-size:12px;}
+  .field{margin-bottom:10px;}
+  .field label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px;}
+  .field input,.field select{width:100%;height:40px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font-size:14px;background:#fafbfc;}
+  .tag{display:inline-block;border:1px solid var(--line);border-radius:7px;padding:2px 8px;font-size:11px;color:var(--muted);}
+  .tag.red{border-color:var(--warn);color:var(--warn);}
+  .tag.ok{border-color:#2a7d4f;color:#2a7d4f;}
+  .list-card{display:flex;gap:12px;border:1px solid var(--line);border-radius:13px;padding:12px;margin-bottom:10px;cursor:pointer;background:#fff;}
+  .list-card .info{flex:1;min-width:0;}
+  .list-card .t{font-size:14px;font-weight:600;margin-bottom:4px;}
+  .sos-big{width:200px;height:200px;border:3px solid var(--warn);color:var(--warn);border-radius:50%;margin:22px auto;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;cursor:pointer;background:#fff;}
+  .sos-big .b{font-size:22px;}
+  .tabbar{height:64px;border-top:1px solid var(--line);display:flex;align-items:center;background:#fff;}
+  .tabbar .tab{flex:1;text-align:center;font-size:11px;color:var(--muted);cursor:pointer;}
+  .tabbar .tab .ti{font-size:18px;display:block;margin-bottom:3px;}
+  .tabbar .tab.active{color:var(--ink);font-weight:700;}
+  .timeline{padding-left:18px;position:relative;}
+  .timeline::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:1px;background:var(--line);}
+  .tl{position:relative;margin-bottom:16px;}
+  .tl::before{content:"";position:absolute;left:-17px;top:5px;width:10px;height:10px;border:1.5px solid var(--ink);border-radius:50%;background:#fff;}
+  .toast{position:fixed;left:50%;top:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .25s;z-index:99;}
+  .toast.show{opacity:1;}
+  .placeholder{color:var(--muted);font-size:12px;text-align:center;padding:16px;}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>养老 App · 浏览器演示</h1>
+    <div class="seg" id="endSeg">
+      <button data-end="elder">老人端</button>
+      <button data-end="family">子女端</button>
+    </div>
+    <span class="who" id="who">未登录</span>
+  </div>
+
+  <div class="stage">
+    <div class="phone">
+      <div class="status"><span>9:30</span><span>信号 · Wi-Fi · 电量</span></div>
+      <div class="appbar"><span class="back" id="backBtn">‹</span><span class="title" id="appTitle"></span></div>
+      <div class="screen" id="screen"></div>
+      <div class="tabbar" id="tabbar"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const DEMO = {
+  elder:  { phone: "13300000001", role: "elder",  label: "老人端" },
+  family: { phone: "13300000002", role: "family", label: "子女端" },
+};
+const VIT_LABEL = { bp:"血压", glucose:"血糖", heart_rate:"心率", weight:"体重" };
+const ORDER_STATUS = { pending_pay:"待付款", in_progress:"进行中", completed:"已完成", after_sale:"售后" };
+const ALERT_LABEL = { SOS:"SOS 求助", vitals_abnormal:"体征异常", missed_med:"漏服药", geofence:"离开围栏", idle:"长时间无活动" };
+
+let state = { end:"elder", uid:null, role:null, tab:"home", detailElder:null };
+let ws = null;
+
+// ---------- 接口封装 ----------
+async function api(path, method="GET", body=null, includeUid=true){
+  const headers = { "Content-Type":"application/json" };
+  if (includeUid && state.uid) headers["X-User-Id"] = state.uid;
+  const opt = { method, headers };
+  if (body) opt.body = JSON.stringify(body);
+  const res = await fetch(path, opt);
+  const json = await res.json();
+  if (json.code !== 0) throw new Error(json.message || "请求失败");
+  return json.data;
+}
+
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 1800);
+}
+
+// ---------- 登录与连接 ----------
+async function login(end){
+  const d = DEMO[end];
+  const u = await api("/api/auth/login", "POST", { phone:d.phone, role:d.role, code:"123456" }, false);
+  state.uid = u.user_id; state.role = u.role; state.end = end;
+  localStorage.setItem("ec_user", JSON.stringify({ end, uid:u.user_id }));
+  document.getElementById("who").textContent = `${d.label} · ${u.phone}`;
+}
+
+function connectWS(){
+  if (ws) { try{ws.close();}catch(e){} }
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  ws = new WebSocket(`${proto}://${location.host}/ws?user_id=${state.uid}`);
+  ws.onmessage = (ev)=>{
+    const m = JSON.parse(ev.data);
+    toast(m.type === "alert_new" ? "收到新告警" : "数据已更新");
+    refreshCurrent();
+  };
+}
+
+// ---------- 导航与渲染 ----------
+const ELDER_TABS = [
+  { key:"home",    label:"首页", ti:"▦" },
+  { key:"health",  label:"健康", ti:"✚" },
+  { key:"service", label:"服务", ti:"🛎" },
+  { key:"mine",    label:"我的", ti:"◉" },
+];
+const FAMILY_TABS = [
+  { key:"home",   label:"父母", ti:"▦" },
+  { key:"alert",  label:"告警", ti:"⚠" },
+  { key:"order",  label:"代办", ti:"🛒" },
+  { key:"mine",   label:"我的", ti:"◉" },
+];
+
+function renderTabbar(){
+  const tabs = state.end === "elder" ? ELDER_TABS : FAMILY_TABS;
+  document.getElementById("tabbar").innerHTML = tabs.map(t=>
+    `<div class="tab ${state.tab===t.key?'active':''}" data-tab="${t.key}">
+       <span class="ti">${t.ti}</span>${t.label}</div>`).join("");
+  document.getElementById("appTitle").textContent =
+    state.end === "elder" ? "老人端" : "子女端";
+}
+
+async function render(){
+  renderTabbar();
+  const screen = document.getElementById("screen");
+  screen.innerHTML = `<div class="placeholder">加载中…</div>`;
+  try {
+    if (state.end === "elder") await renderElder();
+    else await renderFamily();
+  } catch (err) {
+    screen.innerHTML = `<div class="placeholder">${err.message}</div>`;
+  }
+}
+
+function refreshCurrent(){ render(); }
+
+// ---------- 老人端视图 ----------
+async function renderElder(){
+  if (state.tab === "health") return renderElderHealth();
+  if (state.tab === "service") return renderElderService();
+  if (state.tab === "mine") return renderElderMine();
+  return renderElderHome();
+}
+
+async function renderElderHome(){
+  const [profile, vitals, meds, orders, messages] = await Promise.all([
+    api("/api/profile"), api("/api/vitals"), api("/api/medications"),
+    api("/api/orders"), api("/api/messages"),
+  ]);
+  const pendingMeds = meds.filter(m=>!m.latest_log || m.latest_log.status !== "taken");
+  const screen = document.getElementById("screen");
+  screen.innerHTML = `
+    <div class="card">
+      <div class="row between">
+        <div><div style="font-size:19px;font-weight:700;">您好，${profile?.name || "长辈"}</div>
+        <div class="muted">${profile?.age ? profile.age + " 岁" : ""} · ${profile?.address || "地址待填"}</div></div>
+        <span class="tag ok">在线</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row between"><strong>今日待办</strong><span class="tag red">${pendingMeds.length} 项待服药</span></div>
+      ${pendingMeds.map(m=>`<div class="muted" style="margin-top:8px;">${m.time_rule||""} ${m.name}（${m.dosage||""}）</div>`).join("") || "<div class='muted' style='margin-top:8px;'>暂无待办</div>"}
+      <div class="muted" style="margin-top:8px;">进行中订单 ${orders.filter(o=>o.status==="in_progress").length} 笔</div>
+    </div>
+    <div class="card">
+      <div class="grid4">
+        <div class="gitem" data-tab="health"><div class="ic">健康</div><span>健康记录</span></div>
+        <div class="gitem" data-tab="service"><div class="ic">服务</div><span>上门服务</span></div>
+        <div class="gitem" data-tab="mine"><div class="ic">消息</div><span>消息(${messages.length})</span></div>
+        <div class="gitem" data-action="sos"><div class="ic">求助</div><span>一键求助</span></div>
+      </div>
+    </div>
+    <button class="btn warn" data-action="sos">紧急求助</button>`;
+}
+
+async function renderElderHealth(){
+  const [vitals, meds] = await Promise.all([api("/api/vitals"), api("/api/medications")]);
+  const latest = {};
+  vitals.forEach(v=>{ if(!latest[v.type]) latest[v.type]=v; });
+  document.getElementById("screen").innerHTML = `
+    <div class="card">
+      <h3>体征记录</h3>
+      <div class="grid4">
+        ${Object.keys(VIT_LABEL).map(k=>`
+          <div class="gitem"><div class="ic">${VIT_LABEL[k]}</div>
+          <span>${latest[k]?latest[k].value:"--"}</span></div>`).join("")}
+      </div>
+    </div>
+    <div class="card">
+      <h3 class="row between">录入体征 <button class="btn sm" data-action="voice" data-field="体征数值">🎤 语音输入</button></h3>
+      <div class="field"><label>类型</label><select id="vType">
+        <option value="bp">血压</option><option value="glucose">血糖</option>
+        <option value="heart_rate">心率</option><option value="weight">体重</option></select></div>
+      <div class="field"><label>数值（血压格式 收缩压/舒张压）</label><input id="vValue" placeholder="如 122/78"></div>
+      <button class="btn primary" data-action="add-vital">保存体征</button>
+    </div>
+    <div class="card">
+      <h3 class="row between">用药提醒 <button class="btn sm" data-action="voice" data-field="药品名称与剂量">🎤 语音输入</button></h3>
+      ${meds.map(m=>`
+        <div class="list-card">
+          <div class="info">
+            <div class="t">${m.name} <span class="tag ${m.latest_log?.status==="taken"?"ok":"red"}">${m.latest_log?.status==="taken"?"已服":"未服"}</span></div>
+            <div class="muted">${m.dosage||""} · ${m.time_rule||""}</div>
+          </div>
+          <button class="btn sm" data-action="mark-taken" data-plan="${m.plan_id}">标记已服</button>
+        </div>`).join("") || "<div class='placeholder'>暂无用药计划</div>"}
+      <div class="field" style="margin-top:10px;"><label>药品名称</label><input id="mName" placeholder="如 降压药"></div>
+      <div class="field"><label>剂量 / 时间</label><input id="mDosage" placeholder="1 片 · 08:00"></div>
+      <button class="btn" data-action="add-med">添加用药</button>
+    </div>`;
+}
+
+async function renderElderService(){
+  const resources = await api("/api/resources");
+  document.getElementById("screen").innerHTML = `
+    <div class="card">
+      <h3>服务资源</h3>
+      ${resources.map(r=>`
+        <div class="list-card">
+          <div class="info">
+            <div class="t">${r.name}</div>
+            <div class="muted">${r.description||""} · ${r.duration_or_quota||""} · ${r.price_range||""}</div>
+            <div class="muted">${r.location||""} ${r.event_time||""}</div>
+          </div>
+        </div>`).join("")}
+    </div>
+    <div class="card">
+      <h3 class="row between">预约下单（本人支付） <button class="btn sm" data-action="voice" data-field="服务项目与时间">🎤 语音输入</button></h3>
+      <div class="field"><label>服务项目</label><input id="oItem" placeholder="如 助洁服务"></div>
+      <div class="field"><label>金额</label><input id="oAmount" type="number" value="60"></div>
+      <div class="field"><label>预约时间</label><input id="oTime" placeholder="如 明天 10:00"></div>
+      <div class="field"><label>地址</label><input id="oAddress" placeholder="家庭住址"></div>
+      <button class="btn primary" data-action="order-self">确认下单</button>
+    </div>`;
+}
+
+async function renderElderMine(){
+  const [profile, messages, settings, sosSettings] = await Promise.all([
+    api("/api/profile"), api("/api/messages"), api("/api/settings"), api("/api/sos/settings"),
+  ]);
+  document.getElementById("screen").innerHTML = `
+    <div class="card">
+      <h3 class="row between">个人档案 <button class="btn sm" data-action="voice" data-field="档案信息">🎤 语音输入</button></h3>
+      <div class="field"><label>姓名</label><input id="pName" value="${profile?.name||""}"></div>
+      <div class="field"><label>年龄</label><input id="pAge" type="number" value="${profile?.age||""}"></div>
+      <div class="field"><label>慢病</label><input id="pChronic" value="${profile?.chronic_disease||""}"></div>
+      <div class="field"><label>过敏史</label><input id="pAllergy" value="${profile?.allergy||""}"></div>
+      <div class="field"><label>住址</label><input id="pAddress" value="${profile?.address||""}"></div>
+      <button class="btn primary" data-action="save-profile">保存档案</button>
+    </div>
+    <div class="card">
+      <h3>消息（${messages.length}）</h3>
+      ${messages.map(m=>`
+        <div class="list-card" data-action="read-message" data-id="${m.message_id}">
+          <div class="info">
+            <div class="t">${m.title} ${m.read_status==="read"?"<span class='tag ok'>已读</span>":"<span class='tag red'>未读</span>"}</div>
+            <div class="muted">${m.body||""}</div>
+          </div>
+        </div>`).join("") || "<div class='placeholder'>暂无消息</div>"}
+    </div>
+    <div class="card">
+      <h3>适老化设置</h3>
+      <div class="row between" style="margin-bottom:10px;"><span>语音播报</span><input type="checkbox" id="setBroadcast" ${settings.voice_broadcast?"checked":""}></div>
+      <div class="row between" style="margin-bottom:10px;"><span>高对比度</span><input type="checkbox" id="setContrast" ${settings.high_contrast?"checked":""}></div>
+      <div class="row between"><span>语音输入</span><input type="checkbox" id="setVoiceInput" ${settings.voice_input?"checked":""}></div>
+      <button class="btn" style="margin-top:10px;" data-action="save-settings">保存设置</button>
+    </div>
+    <div class="card">
+      <h3>安全开关</h3>
+      <div class="row between" style="margin-bottom:10px;"><span>跌倒检测</span><input type="checkbox" id="sosFall" ${sosSettings.fall_detection?"checked":""}></div>
+      <div class="row between" style="margin-bottom:10px;"><span>防走失围栏</span><input type="checkbox" id="sosGeo" ${sosSettings.geofence?"checked":""}></div>
+      <div class="row between"><span>长时间无活动提醒</span><input type="checkbox" id="sosIdle" ${sosSettings.idle_reminder?"checked":""}></div>
+      <button class="btn" style="margin-top:10px;" data-action="save-sos-settings">保存安全开关</button>
+    </div>`;
+}
+
+// ---------- 子女端视图 ----------
+async function renderFamily(){
+  if (state.tab === "alert") return renderFamilyAlert();
+  if (state.tab === "order") return renderFamilyOrder();
+  if (state.tab === "mine") return renderFamilyMine();
+  return renderFamilyHome();
+}
+
+async function renderFamilyHome(){
+  const overviews = await api("/api/family/overviews");
+  if (state.detailElder) return renderFamilyDetail(state.detailElder);
+  document.getElementById("screen").innerHTML = `
+    ${overviews.map(o=>`
+      <div class="list-card" data-action="goto-detail" data-elder="${o.elder_id}">
+        <div class="info">
+          <div class="t">${o.name||"未命名老人"} · ${o.age||"--"} 岁</div>
+          <div class="muted">最新体征：${Object.keys(o.latest_vitals||{}).map(k=>`${VIT_LABEL[k]} ${o.latest_vitals[k].value}`).join("，")||"暂无"}</div>
+          <div class="muted">位置：${o.location||"未知"} ${o.alert_flag?'· <span style="color:var(--warn);">有未读告警</span>':""}</div>
+        </div>
+        <span class="arrow">›</span>
+      </div>`).join("") || "<div class='placeholder'>尚未绑定老人</div>"}`;
+}
+
+async function renderFamilyDetail(elderId){
+  const d = await api(`/api/family/elders/${elderId}/detail`);
+  document.getElementById("backBtn").style.visibility = "visible";
+  document.getElementById("screen").innerHTML = `
+    <div class="card">
+      <h3>${d.profile?.name||"老人档案"}</h3>
+      <div class="muted">${d.profile?.age||""} 岁 · ${d.profile?.chronic_disease||"无慢病记录"} · 过敏：${d.profile?.allergy||"无"}</div>
+    </div>
+    <div class="card"><h3>体征历史</h3>
+      ${d.vitals_history.map(v=>`<div class="muted" style="margin-bottom:6px;">${VIT_LABEL[v.type]} ${v.value} ${v.unit||""} · ${v.measured_at}</div>`).join("")||"<div class='placeholder'>暂无记录</div>"}
+    </div>
+    <div class="card"><h3>用药情况</h3>
+      ${d.medications.map(m=>`<div class="muted" style="margin-bottom:6px;">${m.name} ${m.dosage||""} · ${m.latest_log?("状态："+m.latest_log.status):"未记录"}</div>`).join("")||"<div class='placeholder'>暂无用药</div>"}
+    </div>
+    <div class="card"><h3>历史订单</h3>
+      ${d.service_records.map(o=>`<div class="muted" style="margin-bottom:6px;">${o.service_item} · ${ORDER_STATUS[o.status]||o.status}</div>`).join("")||"<div class='placeholder'>暂无订单</div>"}
+    </div>`;
+}
+
+async function renderFamilyAlert(){
+  const alerts = await api("/api/family/alerts");
+  document.getElementById("screen").innerHTML = `
+    <div class="timeline">
+      ${alerts.map(a=>`
+        <div class="tl">
+          <span class="tag ${a.status==="unread"?"red":""}">${ALERT_LABEL[a.type]||a.type}</span>
+          <div class="muted" style="margin:4px 0;">${a.content||""} · ${a.occurred_at}</div>
+          <div class="muted">${a.location||""} · 状态：${a.status}
+            <button class="btn sm" style="margin-left:8px;" data-action="read-alert" data-id="${a.alert_id}" data-status="read">标记已读</button>
+          </div>
+        </div>`).join("") || "<div class='placeholder'>暂无告警</div>"}
+    </div>`;
+}
+
+async function renderFamilyOrder(){
+  const [orders, overviews] = await Promise.all([api("/api/family/orders"), api("/api/family/overviews")]);
+  document.getElementById("screen").innerHTML = `
+    <div class="card">
+      <h3 class="row between">代办下单（子女代付） <button class="btn sm" data-action="voice" data-field="服务项目与时间">🎤 语音输入</button></h3>
+      <div class="field"><label>选择老人</label><select id="fElder">
+        ${overviews.map(o=>`<option value="${o.elder_id}">${o.name||"老人"}</option>`).join("")}
+      </select></div>
+      <div class="field"><label>服务项目</label><input id="fItem" placeholder="如 陪诊服务"></div>
+      <div class="field"><label>金额</label><input id="fAmount" type="number" value="100"></div>
+      <div class="field"><label>预约时间 / 地址</label><input id="fTime" placeholder="时间、地址"></div>
+      <button class="btn primary" data-action="order-family">确认代付下单</button>
+    </div>
+    <div class="card">
+      <h3>代付订单</h3>
+      ${orders.map(o=>`
+        <div class="list-card">
+          <div class="info">
+            <div class="t">${o.service_item} <span class="tag ${o.status==="in_progress"?"ok":""}">${ORDER_STATUS[o.status]||o.status}</span></div>
+            <div class="muted">¥${o.amount} · ${o.appointment_time||""} ${o.address||""}</div>
+          </div>
+          ${o.status==="pending_pay"?`<button class="btn sm" data-action="pay-order" data-id="${o.order_id}">支付</button>`:""}
+        </div>`).join("") || "<div class='placeholder'>暂无代付订单</div>"}
+    </div>`;
+}
+
+async function renderFamilyMine(){
+  const me = await api("/api/me");
+  document.getElementById("screen").innerHTML = `
+    <div class="card">
+      <h3>家属账号</h3>
+      <div class="muted">${me.phone} · 已绑定可在"父母"页查看</div>
+    </div>
+    <div class="card">
+      <h3>说明</h3>
+      <div class="muted">本演示为浏览器移动端界面，数据与老人端同源；告警与订单变更通过 WebSocket 实时推送刷新。</div>
+    </div>`;
+}
+
+// ---------- 事件 ----------
+document.addEventListener("click", async (e)=>{
+  const tab = e.target.closest("[data-tab]");
+  if (tab) { state.tab = tab.dataset.tab; state.detailElder = null; render(); return; }
+
+  const seg = e.target.closest("#endSeg button");
+  if (seg) { await switchEnd(seg.dataset.end); return; }
+
+  const act = e.target.closest("[data-action]");
+  if (!act) return;
+  const a = act.dataset.action;
+  try {
+    if (a === "voice") {
+      toast(`「${act.dataset.field}」语音输入为首版占位，正式版接入语音转写`);
+      return;
+    }
+    if (a === "sos") {
+      await api("/api/sos", "POST", { location:"家中", note:"需要帮助" });
+      toast("已发起求助，已通知家属");
+    }
+    else if (a === "add-vital") {
+      const type = document.getElementById("vType").value;
+      const value = document.getElementById("vValue").value.trim();
+      await api("/api/vitals", "POST", { type, value, unit:"" });
+      toast("体征已保存");
+    }
+    else if (a === "add-med") {
+      const name = document.getElementById("mName").value.trim();
+      const dosage = document.getElementById("mDosage").value.trim();
+      if (!name) throw new Error("药品名称不能为空");
+      const [dose, time] = dosage.split("·").map(s=>(s||"").trim());
+      await api("/api/medications", "POST", { name, dosage:dose||"", time_rule:time||"" });
+      toast("用药计划已添加");
+    }
+    else if (a === "mark-taken") {
+      await api(`/api/medications/${act.dataset.plan}/taken`, "POST", { status:"taken", planned_at:new Date().toISOString() });
+      toast("已标记服药");
+    }
+    else if (a === "order-self") {
+      await api("/api/orders", "POST", {
+        service_item: document.getElementById("oItem").value.trim(),
+        amount: Number(document.getElementById("oAmount").value||0),
+        appointment_time: document.getElementById("oTime").value.trim(),
+        address: document.getElementById("oAddress").value.trim(),
+      });
+      toast("下单成功");
+    }
+    else if (a === "order-family") {
+      await api("/api/family/orders", "POST", {
+        elder_id: Number(document.getElementById("fElder").value),
+        service_item: document.getElementById("fItem").value.trim(),
+        amount: Number(document.getElementById("fAmount").value||0),
+        appointment_time: document.getElementById("fTime").value.trim(),
+      });
+      toast("代付下单成功");
+    }
+    else if (a === "pay-order") {
+      await api(`/api/family/orders/${act.dataset.id}/pay`, "POST");
+      toast("支付成功");
+    }
+    else if (a === "read-alert") {
+      await api(`/api/family/alerts/${act.dataset.id}/read`, "POST", { status: act.dataset.status });
+    }
+    else if (a === "read-message") {
+      await api(`/api/messages/${act.dataset.id}/read`, "POST");
+    }
+    else if (a === "goto-detail") {
+      state.detailElder = Number(act.dataset.elder); render(); return;
+    }
+    else if (a === "save-profile") {
+      await api("/api/profile", "PUT", {
+        name: document.getElementById("pName").value.trim(),
+        age: Number(document.getElementById("pAge").value||0) || null,
+        chronic_disease: document.getElementById("pChronic").value.trim(),
+        allergy: document.getElementById("pAllergy").value.trim(),
+        address: document.getElementById("pAddress").value.trim(),
+      });
+      toast("档案已保存");
+    }
+    else if (a === "save-settings") {
+      await api("/api/settings", "PUT", {
+        voice_broadcast: document.getElementById("setBroadcast").checked?1:0,
+        high_contrast: document.getElementById("setContrast").checked?1:0,
+        voice_input: document.getElementById("setVoiceInput").checked?1:0,
+      });
+      toast("设置已保存");
+    }
+    else if (a === "save-sos-settings") {
+      await api("/api/sos/settings", "PUT", {
+        fall_detection: document.getElementById("sosFall").checked?1:0,
+        geofence: document.getElementById("sosGeo").checked?1:0,
+        idle_reminder: document.getElementById("sosIdle").checked?1:0,
+      });
+      toast("安全开关已保存");
+    }
+    render();
+  } catch (err) { toast(err.message); }
+});
+
+document.getElementById("backBtn").addEventListener("click", ()=>{
+  state.detailElder = null; render();
+});
+
+async function switchEnd(end){
+  state.tab = "home"; state.detailElder = null;
+  await login(end); connectWS(); render();
+}
+
+// 启动
+(async function boot(){
+  const saved = JSON.parse(localStorage.getItem("ec_user")||"null");
+  state.end = saved?.end || "elder";
+  await login(state.end);
+  connectWS();
+  render();
+})();
+</script>
+</body>
+</html>
