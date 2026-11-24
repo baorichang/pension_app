@@ -113,6 +113,19 @@ def list_alerts(conn, family_id: int, elder_id: int | None = None) -> list[dict]
     return [dict(r) for r in rows]
 
 
+def count_unread(conn, family_id: int) -> int:
+    """未处理（未读）告警条数，供家属端导航角标提示。"""
+    allowed = bindings.list_elders_of_family(conn, family_id)
+    if not allowed:
+        return 0
+    placeholders = ",".join("?" for _ in allowed)
+    row = conn.execute(
+        f"SELECT COUNT(*) AS c FROM alerts WHERE elder_id IN ({placeholders}) AND status='unread'",
+        tuple(allowed),
+    ).fetchone()
+    return row["c"]
+
+
 def mark_status(conn, family_id: int, alert_id: int, status: str) -> dict:
     if status not in (models.ALERT_READ, models.ALERT_CONTACTED):
         raise errors.ValidationError("告警状态无效")

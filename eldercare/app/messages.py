@@ -32,6 +32,15 @@ def send_message(conn, receiver_id: int, sender_id: int | None, mtype: str,
     return dict(conn.execute("SELECT * FROM messages WHERE message_id=?", (message_id,)).fetchone())
 
 
+def count_unread(conn, receiver_id: int) -> int:
+    """未读消息条数，供底部导航角标提示。"""
+    row = conn.execute(
+        "SELECT COUNT(*) AS c FROM messages WHERE receiver_id=? AND read_status='unread'",
+        (receiver_id,),
+    ).fetchone()
+    return row["c"]
+
+
 def list_messages(conn, receiver_id: int, mtype: str | None = None) -> list[dict]:
     if mtype:
         if mtype not in models.MESSAGE_TYPES:

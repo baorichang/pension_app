@@ -188,6 +188,11 @@ def list_messages(request: Request, conn: Conn = Depends(get_conn)):
     return errors.ok(messages.list_messages(conn, _uid(request)))
 
 
+@router.get("/api/messages/unread-count")
+def messages_unread_count(request: Request, conn: Conn = Depends(get_conn)):
+    return errors.ok({"count": messages.count_unread(conn, _uid(request))})
+
+
 @router.post("/api/messages/{message_id}/read")
 def read_message(message_id: int, conn: Conn = Depends(get_conn)):
     return errors.ok(messages.mark_read(conn, message_id))
@@ -240,6 +245,11 @@ def family_detail(elder_id: int, request: Request, conn: Conn = Depends(get_conn
 @router.get("/api/family/alerts")
 def family_alerts(request: Request, conn: Conn = Depends(get_conn)):
     return errors.ok(alerts.list_alerts(conn, _uid(request)))
+
+
+@router.get("/api/family/alerts/unread-count")
+def family_alerts_unread_count(request: Request, conn: Conn = Depends(get_conn)):
+    return errors.ok({"count": alerts.count_unread(conn, _uid(request))})
 
 
 @router.post("/api/family/alerts/{alert_id}/read")

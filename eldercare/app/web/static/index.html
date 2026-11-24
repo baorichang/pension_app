@@ -53,6 +53,8 @@
   .tabbar .center{flex:1;display:flex;justify-content:center;}
   .sos-btn{width:58px;height:58px;border:2px solid var(--warn);color:var(--warn);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:-22px;background:#fff;cursor:pointer;}
   .sos-btn .ti{font-size:16px;}
+  .tab .ti{position:relative;display:inline-block;}
+  .badge{position:absolute;top:-6px;right:-12px;background:var(--warn);color:#fff;border-radius:9px;min-width:17px;height:17px;font-size:10px;line-height:17px;padding:0 4px;}
   .timeline{padding-left:18px;position:relative;}
   .timeline::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:1px;background:var(--line);}
   .tl{position:relative;margin-bottom:16px;}
@@ -92,7 +94,7 @@ const VIT_LABEL = { bp:"血压", glucose:"血糖", heart_rate:"心率", weight:"
 const ORDER_STATUS = { pending_pay:"待付款", in_progress:"进行中", completed:"已完成", after_sale:"售后" };
 const ALERT_LABEL = { SOS:"SOS 求助", vitals_abnormal:"体征异常", missed_med:"漏服药", geofence:"离开围栏", idle:"长时间无活动" };
 
-let state = { end:"elder", uid:null, role:null, tab:"home", detailElder:null, vitalType:null, authed:false, loginEnd:"elder", resCat:"", famBrowse:false };
+let state = { end:"elder", uid:null, role:null, tab:"home", detailElder:null, vitalType:null, authed:false, loginEnd:"elder", resCat:"", famBrowse:false, unreadMsgs:0, unreadAlerts:0 };
 let ws = null;
 
 // ---------- 接口封装 ----------
@@ -156,17 +158,38 @@ const FAMILY_TABS = [
   { key:"mine",   label:"我的", ti:"◉" },
 ];
 
+function badgeFor(key){
+  if (state.end === "elder" && key === "home") return state.unreadMsgs;
+  if (state.end === "family" && key === "alert") return state.unreadAlerts;
+  return 0;
+}
+
 function renderTabbar(){
   const tabs = state.end === "elder" ? ELDER_TABS : FAMILY_TABS;
   document.getElementById("tabbar").innerHTML = tabs.map(t=>{
     if (t.center) {
       return `<div class="center"><div class="sos-btn" data-tab="sos"><span class="ti">!</span>SOS</div></div>`;
     }
+    const n = badgeFor(t.key);
+    const badge = n > 0 ? `<span class="badge">${n > 99 ? "99+" : n}</span>` : "";
     return `<div class="tab ${state.tab===t.key?'active':''}" data-tab="${t.key}">
-       <span class="ti">${t.ti}</span>${t.label}</div>`;
+       <span class="ti">${t.ti}${badge}</span>${t.label}</div>`;
   }).join("");
   document.getElementById("appTitle").textContent =
     state.end === "elder" ? "老人端" : "子女端";
+}
+
+async function refreshBadges(){
+  if (!state.uid) return;
+  try {
+    if (state.end === "elder") {
+      const r = await api("/api/messages/unread-count");
+      state.unreadMsgs = r.count;
+    } else {
+      const r = await api("/api/family/alerts/unread-count");
+      state.unreadAlerts = r.count;
+    }
+  } catch (e) { /* 角标计数失败不阻塞页面 */ }
 }
 
 async function render(){
@@ -178,6 +201,8 @@ async function render(){
     renderLogin();
     return;
   }
+  renderTabbar();
+  await refreshBadges();
   renderTabbar();
   screen.innerHTML = `<div class="placeholder">加载中…</div>`;
   try {
