@@ -16,6 +16,11 @@ htmlcov/
 *.db-wal
 *.db-shm
 
+# Local secrets / environment
+.env
+.env.*
+!.env.example
+
 # OS / editor
 Thumbs.db
 .DS_Store

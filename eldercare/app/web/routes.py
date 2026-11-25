@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
-from app import (alerts, auth, bindings, errors, family, health, messages, models,
+from app import (ai, alerts, auth, bindings, errors, family, health, messages, models,
                  orders, profile, resources, settings, sos, sync)
 from app.web.deps import get_conn
 from app.web.push import hub
@@ -87,6 +87,11 @@ class SettingsBody(BaseModel):
     voice_broadcast: Optional[int] = None
     high_contrast: Optional[int] = None
     voice_input: Optional[int] = None
+
+
+class AiChatBody(BaseModel):
+    message: str
+    history: Optional[list] = None
 
 
 def _uid(request: Request) -> int:
@@ -296,6 +301,13 @@ def list_resources(category: Optional[str] = None, conn: Conn = Depends(get_conn
 @router.get("/api/sync/changes")
 def sync_changes(since: str = "", conn: Conn = Depends(get_conn)):
     return errors.ok(sync.pull_changes(conn, since))
+
+
+@router.post("/api/ai/chat")
+def ai_chat(body: AiChatBody, request: Request, conn: Conn = Depends(get_conn)):
+    _uid(request)
+    result = ai.chat(body.message, body.history)
+    return errors.ok(result)
 
 
 @router.get("/api/health")

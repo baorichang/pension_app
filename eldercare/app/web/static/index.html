@@ -359,13 +359,22 @@ function closeAi(){
   renderAiBall();
 }
 
-function sendAi(){
+async function sendAi(){
   const input = document.getElementById("aiInput");
   const text = input.value.trim();
   if (!text) return;
   state.aiMessages.push({role:"user", text});
   input.value = "";
-  state.aiMessages.push({role:"ai", text:aiReply(text)});
+  const loadingIdx = state.aiMessages.push({role:"ai", text:"正在输入…"}) - 1;
+  renderAiMsgs();
+  const history = state.aiMessages.slice(0, -1).slice(-6)
+    .map(m=>({role:m.role, content:m.text}));
+  try {
+    const r = await api("/api/ai/chat", "POST", { message: text, history });
+    state.aiMessages[loadingIdx] = {role:"ai", text:r.reply};
+  } catch (err) {
+    state.aiMessages[loadingIdx] = {role:"ai", text:aiReply(text)};
+  }
   renderAiMsgs();
 }
 

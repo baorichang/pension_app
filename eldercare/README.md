@@ -113,7 +113,8 @@ eldercare/
     ├── test_stage10_login_ui.py       # 问题 4：登录界面要素与链路
     ├── test_stage11_prototype.py      # 问题 5：导航/分类/入口对齐原型
     ├── test_stage12_badge.py          # 问题 6：未读消息/告警角标计数
-    └── test_stage13_ui_polish.py       # 界面细化：下拉/状态中文/状态栏/AI 助手
+    ├── test_stage13_ui_polish.py       # 界面细化：下拉/状态中文/状态栏/AI 助手
+    └── test_stage14_ai.py              # 在线大模型对接与本地兜底
 ```
 
 ## 四、已实现模块（对应开发计划阶段）
@@ -153,16 +154,36 @@ eldercare/
 | T-C6 | 代付订单两端一致 | T-C13 | 已读状态一致 |
 | T-C7 | 订单状态同步 | T-C14 | 多家属数据一致 |
 
-## 七、占位与边界（首版未接入）
+## 七、AI 智能助手配置
+
+AI 对话走后端代理 `POST /api/ai/chat`，采用 OpenAI 兼容 Chat Completions 协议；密钥只存服务端环境变量，不下发前端。
+
+| 环境变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `AI_API_KEY` | 大模型服务商密钥；留空则不调用在线模型，使用本地规则兜底 | 空 |
+| `AI_BASE_URL` | 兼容接口前缀 | `https://api.deepseek.com/v1` |
+| `AI_MODEL` | 模型名 | `deepseek-chat` |
+
+切换服务商只需改 `AI_BASE_URL` 与 `AI_MODEL`（智谱、火山方舟豆包、阿里百炼、Moonshot 等均提供兼容端点，示例见 `.env.example`）。启动前在当前终端注入环境变量即可，例如 PowerShell：
+
+```powershell
+$env:AI_API_KEY="你的密钥"
+$env:AI_MODEL="deepseek-chat"
+python run.py
+```
+
+未配置密钥、网络不可达或接口报错时，助手自动回退到本地养老知识规则应答，演示流程不中断；返回字段 `source` 为 `llm`（在线模型）或 `local`（本地兜底）。
+
+## 八、占位与边界（首版未接入）
 
 - 短信为开发期固定验证码，未接真实短信服务。
 - 语音转写/播报、地图定位为占位接口，未接第三方 SDK。
 - 首版"手机 App"以浏览器移动端演示页呈现，尚无原生 Android/iOS 安装包；HTTP 认证为演示简化（`X-User-Id` 头），未接真实 token/会话服务。
 - 护工端、机构/社区后台、运营后台、智能设备接入、在线问诊闭环、社交商城等按 PRD 第 8 章延后。
 
-## 八、测试结果
+## 九、测试结果
 
-当前全量 **88 个用例全部通过**（阶段 0–6 一致性专项 + 问题 1–6 专项 + 界面细化专项）。运行：
+当前全量 **93 个用例全部通过**（阶段 0–6 一致性专项 + 问题 1–6 专项 + 界面细化专项 + AI 对接专项）。运行：
 
 ```bash
 python -m pytest -v
